@@ -19,6 +19,8 @@ struct Token {
 
 typedef struct Token Token;
 
+void token_delete(Token *tokens, int tokenc);
+void token_print(Token *tokens, int tokenc);
 bool is_operator(char ch);
 
 Token tokens[10000] = {0};
@@ -100,16 +102,13 @@ int main(int argc, char **argv) {
 		}
 
 	}
-	for (i = 0; i < tokenc; i++) {        
-		switch (tokens[i].type) {
-		case INTEGER: printf("INTEGER: %s\n", tokens[i].x); break;
-		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
-		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
-		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
-		}
-	}
+	/* We have already incremented tokenc so
+	 * it is the correct size 
+	 */
+	token_print(tokens, tokenc);
+
 	free(program);
-	token_delete(tokens);
+	token_delete(tokens, tokenc);
 }
 
 bool is_operator(char ch) {
@@ -129,4 +128,15 @@ void token_delete(Token *tokens, int tokenc) {
 	}
 }
 
+void token_print(Token *tokens, int tokenc) {
+	int i;
+	for (i = 0; i < tokenc; i++) {        
+		switch (tokens[i].type) {
+		case INTEGER: printf("INTEGER: %s\n", tokens[i].x); break;
+		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
+		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
+		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
+		}
+	}
+}
 
