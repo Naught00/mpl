@@ -4,23 +4,9 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+#include "lexer.h"
+#include "parser.h"
 
-enum Type {
-	OPERATOR,
-	INTEGER,
-	ASSIGNMENT,
-	IDENTIFIER,
-};
-
-struct Token {
-	enum Type type;
-	char *x;
-};
-
-typedef struct Token Token;
-
-void token_delete(Token *tokens, int tokenc);
-void token_print(Token *tokens, int tokenc);
 bool is_operator(char ch);
 
 int main(int argc, char **argv) {
@@ -107,6 +93,9 @@ int main(int argc, char **argv) {
 	 * it is the correct size 
 	 */
 	token_print(tokens, tokenc);
+
+	Node ast = tree(tokens, tokenc);
+	tree_print(ast);
 
 	free(program);
 	token_delete(tokens, tokenc);
