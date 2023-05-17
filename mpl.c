@@ -23,8 +23,6 @@ void token_delete(Token *tokens, int tokenc);
 void token_print(Token *tokens, int tokenc);
 bool is_operator(char ch);
 
-Token tokens[10000] = {0};
-
 int main(int argc, char **argv) {
 	if (argc < 2) {
 		fprintf(stderr, "No arguments supplied!\n");
@@ -44,8 +42,11 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
-
 	printf("%s\n", program);
+
+	/* tokenc is always <= program_length
+	 */
+	Token *tokens = malloc(program_length * sizeof(Token));
 
 	int i, tokenc, r;
 	char ch;
@@ -126,6 +127,7 @@ void token_delete(Token *tokens, int tokenc) {
 	for (i = 0; i < tokenc; i++) {
 		free(tokens[i].x);
 	}
+	free(tokens);
 }
 
 void token_print(Token *tokens, int tokenc) {

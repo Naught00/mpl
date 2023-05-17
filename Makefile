@@ -1,3 +1,3 @@
 run:
 	cc mpl.c
-	./a.out new.txt
+	./a.out new2.txt
