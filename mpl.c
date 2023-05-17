@@ -21,7 +21,7 @@ typedef struct Token Token;
 
 bool is_operator(char ch);
 
-Token tokens[100] = {0};
+Token tokens[10000] = {0};
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
 		if (isdigit(ch)) {
 			char *repr = malloc(10);
-			memset(repr, 1, 10);
+			memset(repr, 0, 10 * sizeof(char));
 			r = 0;
 
 			while (isdigit(program[i])) {
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 			tokenc++;
 		} else if (isalpha(ch)) {
 			char *identifier = malloc(10);
-			memset(identifier, 1, 10);
+			memset(identifier, 0, 10 * sizeof(char));
 			r = 0;
 
 			while isalpha(program[i]) {
@@ -109,6 +109,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	free(program);
+	token_delete(tokens);
 }
 
 bool is_operator(char ch) {
@@ -120,3 +121,12 @@ bool is_operator(char ch) {
 	default : return false;
 	}
 }
+
+void token_delete(Token *tokens, int tokenc) {
+	int i;
+	for (i = 0; i < tokenc; i++) {
+		free(tokens[i].x);
+	}
+}
+
+
