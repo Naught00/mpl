@@ -6,6 +6,7 @@
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
+#include "out.h"
 
 bool is_operator(char ch);
 bool is_paren(char ch);
@@ -110,6 +111,7 @@ int main(int argc, char **argv) {
 
 	Node ast = tree(tokens, tokenc);
 	tree_print(ast);
+	compile(ast);
 
 	free(program);
 	token_delete(tokens, tokenc);
