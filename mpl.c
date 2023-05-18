@@ -8,6 +8,7 @@
 #include "parser.h"
 
 bool is_operator(char ch);
+bool is_paren(char ch);
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
@@ -49,6 +50,10 @@ int main(int argc, char **argv) {
 				r++;
 				i++;
 			}
+			/* Loop is over: undo the overshoot
+			 */
+			i--;
+
 			repr[r + 1] = '\0';
 
 			Token token = {INTEGER, repr};
@@ -86,6 +91,15 @@ int main(int argc, char **argv) {
 			Token token = {IDENTIFIER, identifier};
 			tokens[tokenc] = token;
 			tokenc++;
+		} else if (is_paren(ch)) {
+			printf("%c\n", ch);
+			char *repr = malloc(2);
+			repr[0] = ch;
+			repr[1] = '\0';
+
+			Token token = {PARENTHESES, repr};
+			tokens[tokenc] = token;
+			tokenc++;
 		}
 
 	}
@@ -111,6 +125,15 @@ bool is_operator(char ch) {
 	}
 }
 
+bool is_paren(char ch) {
+	switch (ch) {
+	case '(': return true;
+	case ')': return true;
+
+	default : return false;
+	}
+}
+
 void token_delete(Token *tokens, int tokenc) {
 	int i;
 	for (i = 0; i < tokenc; i++) {
@@ -127,6 +150,7 @@ void token_print(Token *tokens, int tokenc) {
 		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
 		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
 		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
+		case PARENTHESES: printf("PARENTHESES: %s\n", tokens[i].x); break;
 		}
 	}
 }

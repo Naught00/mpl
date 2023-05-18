@@ -6,6 +6,7 @@ enum Type {
 	INTEGER,
 	ASSIGNMENT,
 	IDENTIFIER,
+	PARENTHESES,
 };
 
 struct Token {
