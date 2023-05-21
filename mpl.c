@@ -116,6 +116,10 @@ int main(int argc, char **argv) {
 	for (i = 0; i < 2; i++) {
 		printf("%s\n", ast.children[i]->token->x);
 	}
+	printf("%s\n", ast.children[1]->children[0]->token->x);
+	printf("%s\n", ast.children[1]->children[1]->token->x);
+	printf("%s\n", ast.children[1]->children[1]->children[0]->token->x);
+	printf("%s\n", ast.children[1]->children[1]->children[1]->token->x);
 
 	free(program);
 	token_delete(tokens, tokenc);

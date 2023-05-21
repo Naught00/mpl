@@ -5,7 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 
-void treei(Node *root, Token *tokens, Node **stack, int stack_index);
+void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index);
 
 //Node tree(Token *tokens, int tokenc) {
 //	Node root = {NULL, NULL};
@@ -91,18 +91,13 @@ void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) 
 Node tree_make(Token *tokens, int tokenc) {
 	Node root = {NULL, NULL};
 
-	int i;
-	for (i = 0; i < tokenc && root.token == NULL; i++) {
-		switch (tokens[i].type) {
-		case OPERATOR: 
-			root.token = &tokens[i];
-			root.children = malloc(2 * sizeof(Node *));
-		}
-	}
+	int token_index = 0;
+	determine_operator(&root, tokens, tokenc, token_index);
 
 	Node **stack = malloc(100 * sizeof(Node *));
 
 	//memset
+	int i;
 	for (i = 0; i < 100; i++) {
 		stack[i] = NULL;
 	}
@@ -111,17 +106,17 @@ Node tree_make(Token *tokens, int tokenc) {
 
 	for (i = 0; i < 100; i++) {
 		if (stack[i] == NULL) {
-			printf("BREAK!");
+			printf("BREAK!\n");
 			break;
 		}
-		treei(stack[i], tokens, stack, i);
+		treei(stack[i], tokens, tokenc, &token_index, stack, i);
 	}
 	return root;
 }
 
-void treei(Node *root, Token *tokens, Node **stack, int stack_index) {
+void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index) {
 	int i, j;
-	for (i = 0, j = 0; j < 2; i++) {
+	for (i = *token_index, j = 0; j < 2 && *token_index < tokenc; i++) {
 		switch (tokens[i].type) {
 		case INTEGER: {
 			Node *child = malloc(sizeof(Node));
@@ -136,7 +131,8 @@ void treei(Node *root, Token *tokens, Node **stack, int stack_index) {
 		case PARENTHESES: {
 			Node *child = malloc(sizeof(Node));
 
-			child->token = &tokens[i];
+			determine_operator(child, tokens, tokenc, *token_index);
+
 			child->children = malloc(2 * sizeof(Node));
 
 			stack[stack_index + 1] = child;
@@ -147,6 +143,8 @@ void treei(Node *root, Token *tokens, Node **stack, int stack_index) {
 		}
 		}
 	}
+
+	*token_index = i;
 }
 
 //void tree_print(Node root) {
