@@ -83,6 +83,7 @@ void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) 
 		case OPERATOR: 
 			root->token = &tokens[i];
 			root->children = malloc(2 * sizeof(Node *));
+			printf("OPD: %s\n", tokens[i].x); 
 			done = true;
 		}
 	}
@@ -110,6 +111,7 @@ Node tree_make(Token *tokens, int tokenc) {
 			break;
 		}
 		treei(stack[i], tokens, tokenc, &token_index, stack, i);
+		printf("TI: %d\n", token_index);
 	}
 	return root;
 }
@@ -131,13 +133,12 @@ void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack
 		case PARENTHESES: {
 			Node *child = malloc(sizeof(Node));
 
-			determine_operator(child, tokens, tokenc, *token_index);
+			determine_operator(child, tokens, tokenc, i);
 
 			child->children = malloc(2 * sizeof(Node));
 
 			stack[stack_index + 1] = child;
 			root->children[j] = child;
-			printf("here\n");
 			j++;
 			break;
 		}
