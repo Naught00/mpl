@@ -4,13 +4,14 @@
 
 struct Node {
 	Token *token;
-	struct Node *left;
-	struct Node *right;
+	struct Node **children;
 };
 
 typedef struct Node Node;
 
 Node tree(Token *tokens, int tokenc);
 void tree_print(Node root);
+
+Node tree_make(Token *tokens, int tokenc);
 
 #endif

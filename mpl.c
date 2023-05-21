@@ -109,9 +109,13 @@ int main(int argc, char **argv) {
 	 */
 	token_print(tokens, tokenc);
 
-	Node ast = tree(tokens, tokenc);
-	tree_print(ast);
-	compile(ast);
+	Node ast = tree_make(tokens, tokenc);
+	//tree_print(ast);
+	//compile(ast);
+
+	for (i = 0; i < 2; i++) {
+		printf("%s\n", ast.children[i]->token->x);
+	}
 
 	free(program);
 	token_delete(tokens, tokenc);

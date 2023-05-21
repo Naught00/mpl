@@ -1,66 +1,173 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "lexer.h"
 #include "parser.h"
 
-Node tree(Token *tokens, int tokenc) {
-	Node root = {NULL, NULL, NULL};
-	Node *operating;
+void treei(Node *root, Token *tokens, Node **stack, int stack_index);
 
-	operating = &root;
+//Node tree(Token *tokens, int tokenc) {
+//	Node root = {NULL, NULL};
+//	Node *operating;
+//
+//	operating = &root;
+//
+//	int i;
+//	for (i = 0; i < tokenc; i++) {
+//		switch (tokens[i].type) {
+//		case OPERATOR: 
+//			operating->token = &tokens[i];
+//
+//			Node *left = malloc(sizeof(Node));
+//			Node *right = malloc(sizeof(Node));
+//
+//			left->token = &tokens[i - 1];
+//			left->left = NULL;
+//			left->right = NULL;
+//
+//			if (tokens[i + 1].type == PARENTHESES) {
+//				right->token = &tokens[i + 3];
+//				right->left = NULL;
+//				right->right = NULL;
+//			} else {
+//				right->token = &tokens[i + 1];
+//				right->left = NULL;
+//				right->right = NULL;
+//			}
+//
+//			operating->left = left;
+//			operating->right = right;
+//			operating = right;
+//		}
+//	}
+//
+//	return root;
+//}
 
+//Node tree_alt(Token *tokens, int tokenc) {
+//	Node root = {NULL, NULL};
+//	root->children = malloc(10 * sizeof(Node));
+//
+//	int i, j;
+//	for (i = 0, j = 0; i < tokenc; i++) {
+//		switch (tokens[i].type) {
+//		case INTEGER: 
+//			//operating->token = &tokens[i];
+//
+//			Node *child = malloc(sizeof(Node));
+//
+//			child->token = &tokens[i + 1];
+//			child->children = malloc(2 * sizeof(Node));
+//
+//			Node *numchild = malloc(sizeof(Node));
+//
+//			numchild->token = &tokens[i];
+//			numchild->children = NULL;
+//
+//			root->children[j] = child;
+//			j++;
+//
+//		}
+//		case OPERATOR:
+//	}
+//
+//	return root;
+//}
+
+void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) {
 	int i;
-	for (i = 0; i < 5; i++) {
+	bool done = false;
+	for (i = token_index; i < tokenc && !done; i++) {
 		switch (tokens[i].type) {
 		case OPERATOR: 
-			operating->token = &tokens[i];
+			root->token = &tokens[i];
+			root->children = malloc(2 * sizeof(Node *));
+			done = true;
+		}
+	}
+}
 
-			Node *left = malloc(sizeof(Node));
-			Node *right = malloc(sizeof(Node));
+Node tree_make(Token *tokens, int tokenc) {
+	Node root = {NULL, NULL};
 
-			left->token = &tokens[i - 1];
-			left->left = NULL;
-			left->right = NULL;
-
-			if (tokens[i + 1].type == PARENTHESES) {
-				right->token = &tokens[i + 3];
-				right->left = NULL;
-				right->right = NULL;
-			} else {
-				right->token = &tokens[i + 1];
-				right->left = NULL;
-				right->right = NULL;
-			}
-
-			operating->left = left;
-			operating->right = right;
-			operating = right;
+	int i;
+	for (i = 0; i < tokenc && root.token == NULL; i++) {
+		switch (tokens[i].type) {
+		case OPERATOR: 
+			root.token = &tokens[i];
+			root.children = malloc(2 * sizeof(Node *));
 		}
 	}
 
+	Node **stack = malloc(100 * sizeof(Node *));
+
+	//memset
+	for (i = 0; i < 100; i++) {
+		stack[i] = NULL;
+	}
+
+	stack[0] = &root;
+
+	for (i = 0; i < 100; i++) {
+		if (stack[i] == NULL) {
+			printf("BREAK!");
+			break;
+		}
+		treei(stack[i], tokens, stack, i);
+	}
 	return root;
 }
 
-void tree_print(Node root) {
-	int i, x;
+void treei(Node *root, Token *tokens, Node **stack, int stack_index) {
+	int i, j;
+	for (i = 0, j = 0; j < 2; i++) {
+		switch (tokens[i].type) {
+		case INTEGER: {
+			Node *child = malloc(sizeof(Node));
 
-	Node *operating = &root;
-	for (i = 0; i < 2; i++) {
-		if (i == 0) {
-			printf("\t%s\n       / \\\n", operating->token->x);
-		} else {
-			printf("\t\n         / \\\n", operating->token->x);
+			child->token = &tokens[i];
+			child->children = NULL;
+
+			root->children[j] = child;
+			j++;
+			break;
 		}
-		printf("      ");
-		for (x = 0; x < i; x++) {
-			printf(" ");
+		case PARENTHESES: {
+			Node *child = malloc(sizeof(Node));
+
+			child->token = &tokens[i];
+			child->children = malloc(2 * sizeof(Node));
+
+			stack[stack_index + 1] = child;
+			root->children[j] = child;
+			printf("here\n");
+			j++;
+			break;
 		}
-		printf("%s", operating->left->token->x);
-		printf("  %s", operating->right->token->x);
-		operating = operating->right;
+		}
 	}
 }
+
+//void tree_print(Node root) {
+//	int i, x;
+//
+//	Node *operating = &root;
+//	for (i = 0; i < 2; i++) {
+//		if (i == 0) {
+//			printf("\t%s\n       / \\\n", operating->token->x);
+//		} else {
+//			printf("\t\n         / \\\n", operating->token->x);
+//		}
+//		printf("      ");
+//		for (x = 0; x < i; x++) {
+//			printf(" ");
+//		}
+//		printf("%s", operating->left->token->x);
+//		printf("  %s", operating->right->token->x);
+//		operating = operating->right;
+//	}
+//}
 
 bool expression(Token token) {
 	switch (token.type) {
