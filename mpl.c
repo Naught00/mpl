@@ -104,12 +104,13 @@ int main(int argc, char **argv) {
 		}
 
 	}
+	free(program);
 	/* We have already incremented tokenc so
 	 * it is the correct size 
 	 */
 	token_print(tokens, tokenc);
 
-	Node ast = tree_make(tokens, tokenc);
+	Node tree = tree_make(tokens, tokenc);
 	//tree_print(ast);
 	//compile(ast);
 
@@ -117,13 +118,17 @@ int main(int argc, char **argv) {
 		//printf("%s\n", ast.children[i]->token->x);
 	}
 
-	printf("%s\n", ast.token->x);
-	printf("%s\n", ast.children[0]->token->x);
-	printf("%s\n", ast.children[1]->token->x);
+	printf("%s\n", tree.token->x);
+	printf("%s\n", tree.children[0]->token->x);
+	printf("%s\n", tree.children[1]->token->x);
+	printf("%s\n", tree.children[1]->children[0]->token->x);
+	printf("%s\n", tree.children[1]->children[1]->token->x);
+	printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
+	printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
 
 
-	free(program);
 	token_delete(tokens, tokenc);
+	//@TODO free the tree
 }
 
 bool is_operator(char ch) {

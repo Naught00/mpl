@@ -5,7 +5,8 @@
 #include "lexer.h"
 #include "parser.h"
 
-void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index);
+void tree_iterate(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index);
+void determine_operator(Node *root, Token *tokens, int tokenc, int token_index);
 
 //Node tree(Token *tokens, int tokenc) {
 //	Node root = {NULL, NULL};
@@ -83,7 +84,6 @@ void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) 
 		case OPERATOR: 
 			root->token = &tokens[i];
 			root->children = malloc(2 * sizeof(Node *));
-			printf("OPD: %s\n", tokens[i].x); 
 			done = true;
 		}
 	}
@@ -95,28 +95,24 @@ Node tree_make(Token *tokens, int tokenc) {
 	int token_index = 0;
 	determine_operator(&root, tokens, tokenc, token_index);
 
-	Node **stack = malloc(100 * sizeof(Node *));
+	Node **stack = malloc(tokenc * sizeof(Node *));
 
-	//memset
 	int i;
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < tokenc; i++)
 		stack[i] = NULL;
-	}
 
 	stack[0] = &root;
 
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < tokenc; i++) {
 		if (stack[i] == NULL) {
-			printf("BREAK!\n");
 			break;
 		}
-		treei(stack[i], tokens, tokenc, &token_index, stack, i);
-		printf("TI: %d\n", token_index);
+		tree_iterate(stack[i], tokens, tokenc, &token_index, stack, i);
 	}
 	return root;
 }
 
-void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index) {
+void tree_iterate(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index) {
 	int i, j;
 	for (i = *token_index, j = 0; j < 2 && *token_index < tokenc; i++) {
 		switch (tokens[i].type) {
@@ -167,10 +163,3 @@ void treei(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack
 //		operating = operating->right;
 //	}
 //}
-
-bool expression(Token token) {
-	switch (token.type) {
-	case INTEGER: return true; break;
-	case OPERATOR: return true; break;
-	}
-}
