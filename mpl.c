@@ -135,8 +135,8 @@ int main(int argc, char **argv) {
 	printf("%s\n", tree.token->x);
 
 	printf("%s\n", tree.children[0]->token->x);
-	printf("%s\n", tree.children[0]->children[0]->token->x);
-	printf("%s\n", tree.children[0]->children[1]->token->x);
+	printf("%s\n", tree.children[1]->token->x);
+	printf("%s\n", tree.children[0]->children[0]->children[0]->token->x);
 
 
 	token_delete(tokens, tokenc);
