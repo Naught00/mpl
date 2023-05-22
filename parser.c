@@ -79,18 +79,28 @@ void determine_operator(Node *root, Token *tokens, int tokenc, int token_index);
 void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) {
 	int i;
 	bool done = false;
-	for (i = token_index; i < tokenc && !done; i++) {
+	int open_count, close_count;
+	for (i = token_index, open_count = 0, close_count = 0; i < tokenc && !done; i++) {
 		switch (tokens[i].type) {
 		case OPERATOR: 
-			root->token = &tokens[i];
-			root->children = malloc(2 * sizeof(Node *));
-			done = true;
+			if (open_count == close_count) {
+				root->token = &tokens[i];
+				root->children = malloc(2 * sizeof(Node *));
+				done = true;
+			}
+			break;
+		case OPEN_PARENTHESES: 
+			open_count++;
+			break;
+		case CLOSE_PARENTHESES: 
+			close_count++;
+			break;
 		}
 	}
 }
 
 Node tree_make(Token *tokens, int tokenc) {
-	Node root = {NULL, NULL};
+	Node root = {NULL, 0, NULL};
 
 	int token_index = 0;
 	determine_operator(&root, tokens, tokenc, token_index);
@@ -109,15 +119,19 @@ Node tree_make(Token *tokens, int tokenc) {
 		}
 		tree_iterate(stack[i], tokens, tokenc, &token_index, stack, i);
 	}
+
+	free(stack);
+
 	return root;
 }
 
 void tree_iterate(Node *root, Token *tokens, int tokenc, int *token_index, Node **stack, int stack_index) {
 	int i, j;
-	for (i = *token_index, j = 0; j < 2 && *token_index < tokenc; i++) {
+	for (i = root->starting_token, j = 0; j < 2 && *token_index < tokenc; i++) {
 		switch (tokens[i].type) {
 		case INTEGER: {
 			Node *child = malloc(sizeof(Node));
+			printf("TOKEN: %s\n", tokens[i].x);
 
 			child->token = &tokens[i];
 			child->children = NULL;
@@ -126,11 +140,23 @@ void tree_iterate(Node *root, Token *tokens, int tokenc, int *token_index, Node 
 			j++;
 			break;
 		}
-		case PARENTHESES: {
+		case OPEN_PARENTHESES: {
 			Node *child = malloc(sizeof(Node));
 
-			determine_operator(child, tokens, tokenc, i);
+			int starting_token = i + 1;
+			determine_operator(child, tokens, tokenc, starting_token);
 
+			// Walk the token stream until we pass out the 
+			// expression.
+			int open_count, close_count;
+			for (open_count = 0, close_count = 0; open_count != close_count; i++) {
+				switch (tokens[i].type) {
+				case OPEN_PARENTHESES: open_count++; break;
+				case CLOSE_PARENTHESES: close_count++; break;
+				}
+			}
+
+			child->starting_token = starting_token;
 			child->children = malloc(2 * sizeof(Node));
 
 			stack[stack_index + 1] = child;

@@ -4,6 +4,7 @@
 
 struct Node {
 	Token *token;
+	int starting_token;
 	struct Node **children;
 };
 

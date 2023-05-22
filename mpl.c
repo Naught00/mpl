@@ -98,7 +98,13 @@ int main(int argc, char **argv) {
 			repr[0] = ch;
 			repr[1] = '\0';
 
-			Token token = {PARENTHESES, repr};
+			enum Type type;
+			switch (ch) {
+			case '(': type = OPEN_PARENTHESES; break;
+			case ')': type = CLOSE_PARENTHESES; break; 
+			}
+
+			Token token = {type, repr};
 			tokens[tokenc] = token;
 			tokenc++;
 		}
@@ -118,13 +124,19 @@ int main(int argc, char **argv) {
 		//printf("%s\n", ast.children[i]->token->x);
 	}
 
+	//printf("%s\n", tree.token->x);
+	//printf("%s\n", tree.children[0]->token->x);
+	//printf("%s\n", tree.children[1]->token->x);
+	//printf("%s\n", tree.children[1]->children[0]->token->x);
+	//printf("%s\n", tree.children[1]->children[1]->token->x);
+	//printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
+	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
+	//
 	printf("%s\n", tree.token->x);
+
 	printf("%s\n", tree.children[0]->token->x);
-	printf("%s\n", tree.children[1]->token->x);
-	printf("%s\n", tree.children[1]->children[0]->token->x);
-	printf("%s\n", tree.children[1]->children[1]->token->x);
-	printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
-	printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
+	printf("%s\n", tree.children[0]->children[0]->token->x);
+	printf("%s\n", tree.children[0]->children[1]->token->x);
 
 
 	token_delete(tokens, tokenc);
@@ -166,7 +178,8 @@ void token_print(Token *tokens, int tokenc) {
 		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
 		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
 		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
-		case PARENTHESES: printf("PARENTHESES: %s\n", tokens[i].x); break;
+		case OPEN_PARENTHESES: printf("Open PARENTHESES: %s\n", tokens[i].x); break;
+		case CLOSE_PARENTHESES: printf("Close PARENTHESES: %s\n", tokens[i].x); break;
 		}
 	}
 }
