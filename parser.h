@@ -11,7 +11,7 @@ struct Node {
 typedef struct Node Node;
 
 Node tree(Token *tokens, int tokenc);
-void tree_print(Node root);
+void tree_print(Node *root);
 
 Node tree_make(Token *tokens, int tokenc);
 

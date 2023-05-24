@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 	token_print(tokens, tokenc);
 
 	Node tree = tree_make(tokens, tokenc);
-	//tree_print(ast);
+	tree_print(&tree);
 	//compile(ast);
 
 	for (i = 0; i < 2; i++) {
@@ -132,11 +132,12 @@ int main(int argc, char **argv) {
 	//printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
 	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
 	//
-	printf("%s\n", tree.token->x);
+	//printf("%s\n", tree.token->x);
 
-	printf("%s\n", tree.children[0]->token->x);
-	printf("%s\n", tree.children[1]->token->x);
-	printf("%s\n", tree.children[0]->children[0]->children[0]->token->x);
+	//printf("%s\n", tree.children[1]->token->x);
+	//printf("4: %s\n", tree.children[1]->children[0]->token->x);
+
+	//printf("%s\n", tree.children[0]->children[0]->children[0]->token->x);
 
 
 	token_delete(tokens, tokenc);
