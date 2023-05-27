@@ -17,7 +17,7 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 		switch (tokens[i].type) {
 		case OPERATOR: 
 			if (open_count == close_count) {
-				root->token = &tokens[i];
+				root->token    = &tokens[i];
 				root->children = malloc(2 * sizeof(Node *));
 				done = true;
 			}
@@ -27,6 +27,11 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 			break;
 		case CLOSE_PARENTHESES: 
 			close_count++;
+			break;
+		case ASSIGNMENT:
+			root->token    = &tokens[i];
+			root->children = malloc(2 * sizeof(Node *));
+			done = true;
 			break;
 		}
 	}
@@ -98,12 +103,23 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			j++;
 			break;
 		}
+		case IDENTIFIER: {
+			Node *child = malloc(sizeof(Node));
+			printf("ID: %s\n", tokens[i].x);
+
+			child->token    = &tokens[i];
+			child->children = NULL;
+
+			root->children[j] = child;
+			j++;
+			break;
+		}
 		}
 	}
 }
 
 void tree_print(Node *root) {
-	Node **stack = malloc(100);
+	Node **stack = malloc(100 * sizeof(Node *));
 
 	int i;
 	for (i = 0; i < 100; i++)
@@ -113,7 +129,6 @@ void tree_print(Node *root) {
 
 	int sp = 0;
 	stack[sp++] = root;
-	int x;
 	while (sp) {
 		tree_print_iterate(stack[--sp], stack, &sp);
 	}

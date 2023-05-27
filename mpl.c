@@ -33,12 +33,14 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
-	printf("%s\n", program);
+	printf("%s", program);
 
 	/* tokenc is always <= program_length
 	 */
 	Token *tokens = malloc(program_length * sizeof(Token));
 
+	/* @FIXME Heap allocate the token representations in
+	 * bulk */
 	int i, tokenc, r;
 	char ch;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
@@ -120,7 +122,7 @@ int main(int argc, char **argv) {
 	token_print(tokens, tokenc);
 
 	Node tree = tree_make(tokens, tokenc);
-	tree_print(&tree);
+	//tree_print(&tree);
 	//compile(ast);
 
 	for (i = 0; i < 2; i++) {
@@ -136,6 +138,8 @@ int main(int argc, char **argv) {
 	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
 	//
 	printf("%s\n", tree.token->x);
+	//printf("%s\n", tree.children[1]->token->x);
+	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
 
 	//printf("%s\n", tree.children[1]->token->x);
 	//printf("4: %s\n", tree.children[1]->children[0]->token->x);
