@@ -8,8 +8,11 @@
 #include "parser.h"
 #include "out.h"
 
-bool is_operator(char ch);
-bool is_paren(char ch);
+static void token_delete(Token *tokens, int tokenc);
+static void token_print(Token *tokens, int tokenc);
+
+static bool is_operator(char ch);
+static bool is_paren(char ch);
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
@@ -132,7 +135,7 @@ int main(int argc, char **argv) {
 	//printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
 	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
 	//
-	//printf("%s\n", tree.token->x);
+	printf("%s\n", tree.token->x);
 
 	//printf("%s\n", tree.children[1]->token->x);
 	//printf("4: %s\n", tree.children[1]->children[0]->token->x);
@@ -144,7 +147,7 @@ int main(int argc, char **argv) {
 	//@TODO free the tree
 }
 
-bool is_operator(char ch) {
+static bool is_operator(char ch) {
 	switch (ch) {
 	case '+': return true;
 	case '-': return true;
@@ -154,7 +157,7 @@ bool is_operator(char ch) {
 	}
 }
 
-bool is_paren(char ch) {
+static bool is_paren(char ch) {
 	switch (ch) {
 	case '(': return true;
 	case ')': return true;
@@ -163,7 +166,7 @@ bool is_paren(char ch) {
 	}
 }
 
-void token_delete(Token *tokens, int tokenc) {
+static void token_delete(Token *tokens, int tokenc) {
 	int i;
 	for (i = 0; i < tokenc; i++) {
 		free(tokens[i].x);
@@ -171,7 +174,7 @@ void token_delete(Token *tokens, int tokenc) {
 	free(tokens);
 }
 
-void token_print(Token *tokens, int tokenc) {
+static void token_print(Token *tokens, int tokenc) {
 	int i;
 	for (i = 0; i < tokenc; i++) {        
 		switch (tokens[i].type) {
@@ -184,4 +187,3 @@ void token_print(Token *tokens, int tokenc) {
 		}
 	}
 }
-

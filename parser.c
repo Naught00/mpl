@@ -38,14 +38,13 @@ Node tree_make(Token *tokens, int tokenc) {
 	determine_operator(&root, tokens, tokenc, root.starting_token);
 
 	Node **stack = malloc(tokenc * sizeof(Node *));
-
 	int i;
 	for (i = 0; i < tokenc; i++)
 		stack[i] = NULL;
 
 	int sp = 0;
 	stack[sp++] = &root;
-	for (i = 0; sp != 0; i++) {
+	while (sp) {
 		tree_iterate(stack[--sp], tokens, tokenc, stack, &sp);
 	}
 
@@ -55,6 +54,8 @@ Node tree_make(Token *tokens, int tokenc) {
 }
 
 static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, int *stack_index) {
+	/* @FIXME Allocate nodes in bulk instead
+	 * of in the loop body */
 	int i, j;
 	for (i = root->starting_token, j = 0; j < 2 && i < tokenc; i++) {
 		switch (tokens[i].type) {
@@ -62,7 +63,7 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			Node *child = malloc(sizeof(Node));
 			printf("TOKEN: %s\n", tokens[i].x);
 
-			child->token = &tokens[i];
+			child->token    = &tokens[i];
 			child->children = NULL;
 
 			root->children[j] = child;
@@ -78,11 +79,11 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			// Walk the token stream until we pass out the 
 			// expression.
 			int open_count, close_count;
-			open_count = 0;
+			open_count  = 0;
 			close_count = 0;
 			do {
 				switch (tokens[i].type) {
-				case OPEN_PARENTHESES: open_count++; break;
+				case OPEN_PARENTHESES : open_count++ ; break;
 				case CLOSE_PARENTHESES: close_count++; break;
 				}
 
@@ -90,7 +91,7 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			} while (open_count != close_count);
 
 			child->starting_token = starting_token;
-			child->children = malloc(2 * sizeof(Node));
+			child->children       = malloc(2 * sizeof(Node));
 
 			stack[(*stack_index)++] = child;
 			root->children[j] = child;
@@ -112,7 +113,8 @@ void tree_print(Node *root) {
 
 	int sp = 0;
 	stack[sp++] = root;
-	for (i = 0; sp != 0; i++) {
+	int x;
+	while (sp) {
 		tree_print_iterate(stack[--sp], stack, &sp);
 	}
 
@@ -120,9 +122,9 @@ void tree_print(Node *root) {
 }
 
 static void tree_print_iterate(Node *root, Node **stack, int *stack_index) {
-	int i;
-	for (i = 0; root->children != NULL && root->children[i] != NULL; i++) {
-		printf("%s\n", root->children[i]->token->x);
+	int i, x;
+	for (i = 1, x = 0; root->children != NULL && root->children[i - 1] != NULL; --i, x++) {
+		printf("%s ", root->children[x]->token->x);
 		stack[(*stack_index)++] = root->children[i];
 	}
 }
