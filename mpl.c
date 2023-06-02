@@ -123,30 +123,25 @@ int main(int argc, char **argv) {
 
 	Node tree = tree_make(tokens, tokenc);
 	//tree_print(&tree);
-	//compile(ast);
+	
+	char *assembly;
+	assembly = compile(tree, tokenc);
+	printf("%s", assembly);
 
-	for (i = 0; i < 2; i++) {
-		//printf("%s\n", ast.children[i]->token->x);
+	FILE *as = fopen("a.s", "w+");
+	if (!as) {
+		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
+		return 3;
 	}
 
-	//printf("%s\n", tree.token->x);
-	//printf("%s\n", tree.children[0]->token->x);
-	//printf("%s\n", tree.children[1]->token->x);
-	//printf("%s\n", tree.children[1]->children[0]->token->x);
-	//printf("%s\n", tree.children[1]->children[1]->token->x);
-	//printf("%s\n", tree.children[1]->children[1]->children[0]->token->x);
-	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
-	//
-	printf("%s\n", tree.token->x);
-	//printf("%s\n", tree.children[1]->token->x);
-	//printf("%s\n", tree.children[1]->children[1]->children[1]->token->x);
+	fprintf(as, "%s", assembly);
+	fclose(as);
 
-	//printf("%s\n", tree.children[1]->token->x);
-	//printf("4: %s\n", tree.children[1]->children[0]->token->x);
+	system("as -o tmp.o a.s");
+	system("ld tmp.o -o a.out");
+	remove("a.s");
 
-	//printf("%s\n", tree.children[0]->children[0]->children[0]->token->x);
-
-
+	free(assembly);
 	token_delete(tokens, tokenc);
 	//@TODO free the tree
 }

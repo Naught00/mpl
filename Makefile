@@ -1,8 +1,10 @@
 run:
-	cc mpl.c parser.c out.c
-	./a.out new5.txt
+	cc mpl.c parser.c out.c -o mpl
+	./mpl tests/new7.txt
 debug:
-	cc -g mpl.c parser.c
-	seergdb ./a.out
+	cc -g mpl.c parser.c -o mpl
+	seergdb ./mpl
 release:
-	cc -O3 mpl.c parser.c out.c
+	cc -O3 mpl.c parser.c out.c -o mpl
+analyze:
+	cc -fanalyzer mpl.c parser.c out.c -o mpl

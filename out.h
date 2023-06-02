@@ -2,6 +2,6 @@
 #define OUT_H
 #include "parser.h"
 
-void compile(Node root);
+char *compile(Node root, int tokenc);
 
 #endif
