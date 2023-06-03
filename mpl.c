@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	}
 
 	FILE *f = fopen(argv[1], "r");
-	if (f == NULL) {
+	if (!f) {
 		fprintf(stderr, "Invalid filename! errno: %d\n", errno);
 		return 2;
 	}
@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
 	system("as -o tmp.o a.s");
 	system("ld tmp.o -o a.out");
 	remove("a.s");
+	remove("tmp.o");
 
 	free(assembly);
 	token_delete(tokens, tokenc);

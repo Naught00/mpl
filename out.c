@@ -8,29 +8,9 @@ struct Variable {
 	int stack_offset;
 };
 
-static void cvisit(Node *root, Node **stack, int *sp, char *assembly, int *asm_size, int *current_stack_offset);
+static void cvisit(Node *root, Node **stack, int *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
 
 char *registers[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
-
-//void compile(Node root) {
-//	int i;
-//	Node *operating = &root;
-//
-//	printf("\n");
-//	for (i = 0; i < 1; i++) {
-//		switch (operating->token->x[0]) {
-//		case '*':
-//			if (operating->right->token->type == OPERATOR) {
-//				switch (operating->right->token->x[0]) {
-//				case '+': printf("ADD %s, %s\n", operating->right->left->token->x, operating->right->right->token->x);
-//				}
-//			}
-//
-//			printf("MULT %s\n", operating->left->token->x);
-//		}
-//	}
-//}
-//
 
 char *compile(Node root, int tokenc) {
 	int asm_size;
@@ -53,22 +33,23 @@ char *compile(Node root, int tokenc) {
 
 	int current_stack_offset = 0x0;
 	int sp = 0;
+	int register_index = 0;
 	stack[sp++] = &root;
 	while (sp) {
-		cvisit(stack[--sp], stack, &sp, assembly, &asm_size, &current_stack_offset);
+		cvisit(stack[--sp], stack, &sp, assembly, &asm_size, &current_stack_offset, &register_index);
 		stack[sp] = NULL;
 		//sleep(1);
 	}
 
 	free(stack);
 
-	char *end = "\tcall exit\n\tadd $0x40, %rsp\n\tret\n";
+	char *end = "\tmov %rax, %rdi\n\tcall exit\n\tadd $0x40, %rsp\n\tret\n";
 	int end_length = strlen(end);
 	memmove(&assembly[asm_size], end, end_length);
 	asm_size += end_length;
 
 	char *exit = "exit:\n"
-		     "\tmov $0x10, %rbx\n"
+		     "\tmov %rdi, %rbx\n"
 		     "\tmov $0x1, %rax\n"
 		     "\tint $0x80\n";
 	int exit_length = strlen(exit);
@@ -78,18 +59,21 @@ char *compile(Node root, int tokenc) {
 	return assembly;
 }
 
-static void cvisit(Node *root, Node **stack, int *sp, char *assembly, int *asm_size, int *current_stack_offset) {
+static void cvisit(Node *root, Node **stack, int *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index) {
 	if (!root->children || root->children_added) {
-		//printf("TOK: %s\n", root->token->x);
+		printf("TOK: %s\n", root->token->x);
+		printf("WHERE: %d\n", root->starting_token);
 		switch (root->token->type) {
 		case INTEGER:
 			struct Variable x = {*current_stack_offset};
-			sprintf(&assembly[*asm_size], "\tmovq $0x%x, 0x%x(%rsp)\n", atoi(root->token->x), x.stack_offset);
+			sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
 			*current_stack_offset += 0x8;
 			break;
 		case OPERATOR:
-			printf("OPER: %s\n", root->token->x);
+			sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
+			--(*register_index);
+			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		}
 		return;

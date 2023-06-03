@@ -38,7 +38,7 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 }
 
 Node tree_make(Token *tokens, int tokenc) {
-	Node root = {NULL, 0, NULL};
+	Node root = {NULL, 0, NULL, false};
 
 	determine_operator(&root, tokens, tokenc, root.starting_token);
 
@@ -97,6 +97,7 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 
 			child->starting_token = starting_token;
 			child->children       = malloc(2 * sizeof(Node));
+			child->children_added = false;
 
 			stack[(*stack_index)++] = child;
 			root->children[j] = child;
@@ -109,6 +110,7 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 
 			child->token    = &tokens[i];
 			child->children = NULL;
+			child->children_added = false;
 
 			root->children[j] = child;
 			j++;
