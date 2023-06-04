@@ -8,6 +8,7 @@ enum Type {
 	IDENTIFIER,
 	OPEN_PARENTHESES,
 	CLOSE_PARENTHESES,
+	SEMI_COLON,
 };
 
 struct Token {

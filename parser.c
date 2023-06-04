@@ -33,6 +33,8 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 			root->children = malloc(2 * sizeof(Node *));
 			done = true;
 			break;
+		case SEMI_COLON:
+			return;
 		}
 	}
 }
@@ -96,7 +98,7 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			} while (open_count != close_count);
 
 			child->starting_token = starting_token;
-			child->children       = malloc(2 * sizeof(Node));
+			//child->children       = malloc(2 * sizeof(Node));
 			child->children_added = false;
 
 			stack[(*stack_index)++] = child;
@@ -106,7 +108,8 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 		}
 		case IDENTIFIER: {
 			Node *child = malloc(sizeof(Node));
-			printf("ID: %s\n", tokens[i].x);
+
+			//printf("ID: %s\n", tokens[i].x);
 
 			child->token    = &tokens[i];
 			child->children = NULL;
@@ -114,6 +117,18 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 
 			root->children[j] = child;
 			j++;
+
+			Node *child2 = malloc(sizeof(Node));
+			int starting_token = i + 2;
+			determine_operator(child2, tokens, tokenc, starting_token);
+			if (child2->children) {
+				child2->starting_token = starting_token;
+				child->children_added = false;
+
+				stack[(*stack_index)++] = child2;
+				root->children[j] = child2;
+				j++;
+			}
 			break;
 		}
 		}

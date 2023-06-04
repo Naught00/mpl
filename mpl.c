@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	}
 
 	FILE *f = fopen(argv[1], "r");
-	if (!f) {
+	if (f == NULL) {
 		fprintf(stderr, "Invalid filename! errno: %d\n", errno);
 		return 2;
 	}
@@ -112,9 +112,17 @@ int main(int argc, char **argv) {
 			Token token = {type, repr};
 			tokens[tokenc] = token;
 			tokenc++;
-		}
+		} else if (ch == ';') {
+			char *repr = malloc(2);
+			repr[0] = ch;
+			repr[1] = '\0';
 
+			Token token = {SEMI_COLON, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+		}
 	}
+
 	free(program);
 	/* We have already incremented tokenc so
 	 * it is the correct size 
@@ -129,7 +137,7 @@ int main(int argc, char **argv) {
 	printf("%s", assembly);
 
 	FILE *as = fopen("a.s", "w+");
-	if (!as) {
+	if (as == NULL) {
 		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
 		return 3;
 	}
@@ -184,6 +192,7 @@ static void token_print(Token *tokens, int tokenc) {
 		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
 		case OPEN_PARENTHESES: printf("Open PARENTHESES: %s\n", tokens[i].x); break;
 		case CLOSE_PARENTHESES: printf("Close PARENTHESES: %s\n", tokens[i].x); break;
+		case SEMI_COLON: printf("Semi-colon: %s\n", tokens[i].x); break;
 		}
 	}
 }

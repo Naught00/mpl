@@ -38,7 +38,6 @@ char *compile(Node root, int tokenc) {
 	while (sp) {
 		cvisit(stack[--sp], stack, &sp, assembly, &asm_size, &current_stack_offset, &register_index);
 		stack[sp] = NULL;
-		//sleep(1);
 	}
 
 	free(stack);
@@ -61,19 +60,25 @@ char *compile(Node root, int tokenc) {
 
 static void cvisit(Node *root, Node **stack, int *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index) {
 	if (!root->children || root->children_added) {
-		printf("TOK: %s\n", root->token->x);
-		printf("WHERE: %d\n", root->starting_token);
 		switch (root->token->type) {
 		case INTEGER:
-			struct Variable x = {*current_stack_offset};
 			sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
-			*current_stack_offset += 0x8;
 			break;
 		case OPERATOR:
 			sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
-			--(*register_index);
 			*asm_size += strlen(&assembly[*asm_size]);
+
+			--(*register_index);
+			break;
+		case ASSIGNMENT:
+			struct Variable x = {*current_stack_offset};
+
+			sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%rsp)\n", registers[(*register_index) - 1], x.stack_offset);
+			*asm_size += strlen(&assembly[*asm_size]);
+
+			--(*register_index);
+			*current_stack_offset += 0x8;
 			break;
 		}
 		return;
