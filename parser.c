@@ -40,6 +40,10 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 }
 
 Node tree_make(Token *tokens, int tokenc) {
+	Node *lines = malloc(tokenc * sizeof(Node));
+
+	//int x;
+	//for (x = 0; x < tokenc; x++)
 	Node root = {NULL, 0, NULL, false};
 
 	determine_operator(&root, tokens, tokenc, root.starting_token);
@@ -61,7 +65,7 @@ Node tree_make(Token *tokens, int tokenc) {
 }
 
 static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, int *stack_index) {
-	/* @FIXME Allocate nodes in bulk instead
+	/* XXX@FIXME Allocate nodes in bulk instead
 	 * of in the loop body */
 	int i, j;
 	for (i = root->starting_token, j = 0; j < 2 && i < tokenc; i++) {
@@ -107,27 +111,29 @@ static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, in
 			break;
 		}
 		case IDENTIFIER: {
-			Node *child = malloc(sizeof(Node));
+			Node *left = malloc(sizeof(Node));
 
 			//printf("ID: %s\n", tokens[i].x);
 
-			child->token    = &tokens[i];
-			child->children = NULL;
-			child->children_added = false;
+			left->token          = &tokens[i];
+			left->children       = NULL;
+			left->children_added = false;
 
-			root->children[j] = child;
+			root->children[j] = left;
 			j++;
 
-			Node *child2 = malloc(sizeof(Node));
+			Node *right        = malloc(sizeof(Node));
 			int starting_token = i + 2;
-			determine_operator(child2, tokens, tokenc, starting_token);
-			if (child2->children) {
-				child2->starting_token = starting_token;
-				child->children_added = false;
+			determine_operator(right, tokens, tokenc, starting_token);
+			if (right->children) {
+				right->starting_token = starting_token;
+				right->children_added  = false;
 
-				stack[(*stack_index)++] = child2;
-				root->children[j] = child2;
+				stack[(*stack_index)++] = right;
+				root->children[j]       = right;
 				j++;
+			} else {
+				free(right);
 			}
 			break;
 		}
