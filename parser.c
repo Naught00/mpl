@@ -40,7 +40,7 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 }
 
 Node tree_make(Token *tokens, int tokenc) {
-	Node *lines = malloc(tokenc * sizeof(Node));
+	//Node *lines = malloc(tokenc * sizeof(Node));
 
 	//int x;
 	//for (x = 0; x < tokenc; x++)
