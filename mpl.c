@@ -35,14 +35,13 @@ int main(int argc, char **argv) {
 	fclose(f);
 	printf("%s", program);
 
-	/* tokenc is always <= program_length
-	 */
 	Token *tokens = malloc(program_length * sizeof(Token));
 
 	/* @FIXME Heap allocate the token representations in
 	 * bulk */
 	int i, tokenc, r;
 	char ch;
+	bool lvalue = true;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -94,7 +93,14 @@ int main(int argc, char **argv) {
 			}
 			identifier[r + 1] = '\0';
 
-			Token token = {IDENTIFIER, identifier};
+			Token token = {.x = identifier};
+			if (lvalue) {
+				token.type = IDENTIFIER_L; 
+				lvalue = false;
+			} else {
+				token.type = IDENTIFIER_R;
+			}
+
 			tokens[tokenc] = token;
 			tokenc++;
 		} else if (is_paren(ch)) {
@@ -120,13 +126,12 @@ int main(int argc, char **argv) {
 			Token token = {SEMI_COLON, repr};
 			tokens[tokenc] = token;
 			tokenc++;
+
+			lvalue = true;
 		}
 	}
 
 	free(program);
-	/* We have already incremented tokenc so
-	 * it is the correct size 
-	 */
 	token_print(tokens, tokenc);
 
 	Node tree = tree_make(tokens, tokenc);
@@ -136,7 +141,7 @@ int main(int argc, char **argv) {
 	assembly = compile(tree, tokenc);
 	printf("%s", assembly);
 
-	FILE *as = fopen("a.s", "w+");
+	FILE *as = fopen("/tmp/a.s", "w+");
 	if (as == NULL) {
 		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
 		return 3;
@@ -145,10 +150,10 @@ int main(int argc, char **argv) {
 	fprintf(as, "%s", assembly);
 	fclose(as);
 
-	system("as -o tmp.o a.s");
-	system("ld tmp.o -o a.out");
-	remove("a.s");
-	remove("tmp.o");
+	system("as -o /tmp/tmp.o /tmp/a.s");
+	system("ld /tmp/tmp.o -o a.out");
+	remove("/tmp/a.s");
+	remove("/tmp/tmp.o");
 
 	free(assembly);
 	token_delete(tokens, tokenc);
@@ -189,7 +194,8 @@ static void token_print(Token *tokens, int tokenc) {
 		case INTEGER: printf("INTEGER: %s\n", tokens[i].x); break;
 		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
 		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
-		case IDENTIFIER: printf("IDENTIFIER: %s\n", tokens[i].x); break;
+		case IDENTIFIER_L: printf("IDENTIFIER_L: %s\n", tokens[i].x); break;
+		case IDENTIFIER_R: printf("IDENTIFIER_R: %s\n", tokens[i].x); break;
 		case OPEN_PARENTHESES: printf("Open PARENTHESES: %s\n", tokens[i].x); break;
 		case CLOSE_PARENTHESES: printf("Close PARENTHESES: %s\n", tokens[i].x); break;
 		case SEMI_COLON: printf("Semi-colon: %s\n", tokens[i].x); break;
