@@ -11,9 +11,6 @@
 static void token_delete(Token *tokens, int tokenc);
 static void token_print(Token *tokens, int tokenc);
 
-static bool is_operator(char ch);
-static bool is_paren(char ch);
-
 int main(int argc, char **argv) {
 	if (argc < 2) {
 		fprintf(stderr, "No arguments supplied!\n");
@@ -49,7 +46,9 @@ int main(int argc, char **argv) {
 		ch = program[i];
 		putchar(ch);
 
-		if (isdigit(ch)) {
+		switch (ch) {
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9': {
 			char *repr = malloc(10);
 			memset(repr, 0, 10 * sizeof(char));
 			r = 0;
@@ -66,8 +65,10 @@ int main(int argc, char **argv) {
 			Token token = {INTEGER, repr};
 			tokens[tokenc] = token;
 			tokenc++;
-
-		} else if (is_operator(ch)) {
+			break;
+		}
+		case '+': case '-':
+		case '*': case '/': {
 			char *repr = malloc(2);
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -75,7 +76,9 @@ int main(int argc, char **argv) {
 			Token token = {OPERATOR, repr};
 			tokens[tokenc] = token;
 			tokenc++;
-		} else if (ch == '=') {
+			break;
+		}
+		case '=': {
 			char *repr = malloc(2);
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -83,7 +86,53 @@ int main(int argc, char **argv) {
 			Token token = {ASSIGNMENT, repr};
 			tokens[tokenc] = token;
 			tokenc++;
-		} else if (isalpha(ch)) {
+			break;
+		}
+		case '(': {
+			printf("%c\n", ch);
+			char *repr = malloc(2);
+			repr[0] = ch;
+			repr[1] = '\0';
+
+			enum Type type;
+			type = OPEN_PARENTHESES;
+
+			Token token = {type, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		}
+		case ')': {
+			printf("%c\n", ch);
+			char *repr = malloc(2);
+			repr[0] = ch;
+			repr[1] = '\0';
+
+			enum Type type;
+			type = CLOSE_PARENTHESES;
+
+			Token token = {type, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		}
+		case ';': {
+			char *repr = malloc(2);
+			repr[0] = ch;
+			repr[1] = '\0';
+
+			Token token = {SEMI_COLON, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+
+			lvalue = true;
+			lines[l_index++] = tokenc;
+			break;
+		}
+		default: {
+			if (!isalpha(ch)) 
+				break;
+
 			char *identifier = malloc(10);
 			memset(identifier, 0, 10 * sizeof(char));
 			r = 0;
@@ -106,32 +155,8 @@ int main(int argc, char **argv) {
 
 			tokens[tokenc] = token;
 			tokenc++;
-		} else if (is_paren(ch)) {
-			printf("%c\n", ch);
-			char *repr = malloc(2);
-			repr[0] = ch;
-			repr[1] = '\0';
-
-			enum Type type;
-			switch (ch) {
-			case '(': type = OPEN_PARENTHESES; break;
-			case ')': type = CLOSE_PARENTHESES; break; 
-			}
-
-			Token token = {type, repr};
-			tokens[tokenc] = token;
-			tokenc++;
-		} else if (ch == ';') {
-			char *repr = malloc(2);
-			repr[0] = ch;
-			repr[1] = '\0';
-
-			Token token = {SEMI_COLON, repr};
-			tokens[tokenc] = token;
-			tokenc++;
-
-			lvalue = true;
-			lines[l_index++] = tokenc;
+			break;
+		}
 		}
 	}
 
@@ -163,25 +188,6 @@ int main(int argc, char **argv) {
 	//free(assembly);
 	token_delete(tokens, tokenc);
 	//@TODO free the tree
-}
-
-static bool is_operator(char ch) {
-	switch (ch) {
-	case '+': return true;
-	case '-': return true;
-	case '*': return true;
-	case '/': return true;
-	default : return false;
-	}
-}
-
-static bool is_paren(char ch) {
-	switch (ch) {
-	case '(': return true;
-	case ')': return true;
-
-	default : return false;
-	}
 }
 
 static void token_delete(Token *tokens, int tokenc) {
