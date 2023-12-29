@@ -8,6 +8,8 @@
 #include "parser.h"
 #include "out.h"
 
+#define MAX_VSIZE 256
+
 static void token_delete(Token *tokens, int tokenc);
 static void token_print(Token *tokens, int tokenc);
 
@@ -34,33 +36,35 @@ int main(int argc, char **argv) {
 
 	Token *tokens = malloc(program_length * sizeof(Token));
 
-	/* @FIXME Heap allocate the token representations in
-	 * bulk */
-	int i, tokenc, r;
+	int i;
+	char *reprs     = malloc(program_length * sizeof(char));
+	memset(reprs, 0, program_length * sizeof(char));
+	uint32_t r_index = 0;
+
+	int tokenc, r;
 	char ch;
-	bool lvalue = true;
-	int *lines = malloc(program_length * sizeof(int));
+	bool lvalue      = true;
+	int *lines       = malloc(program_length * sizeof(int));
 	uint32_t l_index = 0;
 	lines[l_index++] = 0;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
-		putchar(ch);
 
 		switch (ch) {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9': {
-			char *repr = malloc(10);
-			memset(repr, 0, 10 * sizeof(char));
+			char *repr = &reprs[r_index];
 			r = 0;
 
 			while (isdigit(program[i])) {
-				repr[r] = program[i];
-				r++;
+				repr[r++] = program[i];
 				i++;
 			}
 			i--;
 
-			repr[r + 1] = '\0';
+			repr[r] = '\0';
+			printf("repr: %s\n", repr);
+			r_index += r + 1;
 
 			Token token = {INTEGER, repr};
 			tokens[tokenc] = token;
@@ -69,9 +73,10 @@ int main(int argc, char **argv) {
 		}
 		case '+': case '-':
 		case '*': case '/': {
-			char *repr = malloc(2);
+			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
+			r_index += 2;
 
 			Token token = {OPERATOR, repr};
 			tokens[tokenc] = token;
@@ -79,9 +84,10 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case '=': {
-			char *repr = malloc(2);
+			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
+			r_index += 2;
 
 			Token token = {ASSIGNMENT, repr};
 			tokens[tokenc] = token;
@@ -90,9 +96,10 @@ int main(int argc, char **argv) {
 		}
 		case '(': {
 			printf("%c\n", ch);
-			char *repr = malloc(2);
+			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
+			r_index += 2;
 
 			enum Type type;
 			type = OPEN_PARENTHESES;
@@ -104,9 +111,10 @@ int main(int argc, char **argv) {
 		}
 		case ')': {
 			printf("%c\n", ch);
-			char *repr = malloc(2);
+			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
+			r_index += 2;
 
 			enum Type type;
 			type = CLOSE_PARENTHESES;
@@ -117,9 +125,10 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case ';': {
-			char *repr = malloc(2);
+			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
+			r_index += 2;
 
 			Token token = {SEMI_COLON, repr};
 			tokens[tokenc] = token;
@@ -133,17 +142,16 @@ int main(int argc, char **argv) {
 			if (!isalpha(ch)) 
 				break;
 
-			char *identifier = malloc(10);
-			memset(identifier, 0, 10 * sizeof(char));
+			char *identifier = &reprs[r_index];
 			r = 0;
 
 			while isalpha(program[i]) {
-				identifier[r] = program[i];
-				r++;
+				identifier[r++] = program[i];
 				i++;
 			}
 			i--;
-			identifier[r + 1] = '\0';
+			identifier[r] = '\0';
+			r_index += r + 1;
 
 			Token token = {.x = identifier};
 			if (lvalue) {
@@ -186,7 +194,7 @@ int main(int argc, char **argv) {
 	//remove("/tmp/tmp.o");
 
 	//free(assembly);
-	token_delete(tokens, tokenc);
+	//token_delete(tokens, tokenc);
 	//@TODO free the tree
 }
 
