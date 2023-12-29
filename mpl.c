@@ -42,8 +42,12 @@ int main(int argc, char **argv) {
 	int i, tokenc, r;
 	char ch;
 	bool lvalue = true;
+	int *lines = malloc(program_length * sizeof(int));
+	uint32_t l_index = 0;
+	lines[l_index++] = 0;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
+		putchar(ch);
 
 		if (isdigit(ch)) {
 			char *repr = malloc(10);
@@ -55,8 +59,6 @@ int main(int argc, char **argv) {
 				r++;
 				i++;
 			}
-			/* Loop is over: undo the overshoot
-			 */
 			i--;
 
 			repr[r + 1] = '\0';
@@ -91,6 +93,7 @@ int main(int argc, char **argv) {
 				r++;
 				i++;
 			}
+			i--;
 			identifier[r + 1] = '\0';
 
 			Token token = {.x = identifier};
@@ -128,18 +131,20 @@ int main(int argc, char **argv) {
 			tokenc++;
 
 			lvalue = true;
+			lines[l_index++] = tokenc;
 		}
 	}
 
 	free(program);
 	token_print(tokens, tokenc);
 
-	Node tree = tree_make(tokens, tokenc);
+	l_index--;
+	Node *tree = tree_make(tokens, tokenc, lines, l_index);
 	//tree_print(&tree);
 	
 	char *assembly;
-	assembly = compile(tree, tokenc);
-	printf("%s", assembly);
+	//assembly = compile(tree, tokenc);
+	//printf("%s", assembly);
 
 	FILE *as = fopen("/tmp/a.s", "w+");
 	if (as == NULL) {
@@ -147,15 +152,15 @@ int main(int argc, char **argv) {
 		return 3;
 	}
 
-	fprintf(as, "%s", assembly);
-	fclose(as);
+	////fprintf(as, "%s", assembly);
+	//fclose(as);
 
-	system("as -o /tmp/tmp.o /tmp/a.s");
-	system("ld /tmp/tmp.o -o a.out");
-	remove("/tmp/a.s");
-	remove("/tmp/tmp.o");
+	//system("as -o /tmp/tmp.o /tmp/a.s");
+	//system("ld /tmp/tmp.o -o a.out");
+	//remove("/tmp/a.s");
+	//remove("/tmp/tmp.o");
 
-	free(assembly);
+	//free(assembly);
 	token_delete(tokens, tokenc);
 	//@TODO free the tree
 }
