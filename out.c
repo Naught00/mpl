@@ -20,15 +20,13 @@ char *compile(Node *tree, uint32_t l_size, int tokenc) {
 	int asm_size;
 	asm_size = 0;
 	printf("%d\n", tokenc);
-	char *assembly      = malloc(tokenc * 1000);
-	memset(assembly, 0, tokenc);
+	char *assembly      = malloc(tokenc * 100);
+	memset(assembly, 0, tokenc * 100);
 
 	char *start = ".section .text\n.global _start\n_start:\n\tsub $0x40, %rsp\n";
 	int start_length = strlen(start);
 	memmove(assembly, start, start_length);
 	asm_size += start_length;
-
-	//strcat(assembly, start);
 
 	Node **stack = malloc(tokenc * sizeof(Node *));
 	int i;
@@ -76,7 +74,7 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 			break;
 		case OPERATOR:
 			sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
-			*asm_size += strlen(&assembly[*asm_size]);
+			*asm_size += 16;
 
 			--(*register_index);
 			break;

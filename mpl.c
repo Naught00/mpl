@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
 	Token *tokens = malloc(program_length * sizeof(Token));
 
 	int i;
-	char *reprs     = malloc(program_length * sizeof(char));
-	memset(reprs, 0, program_length * sizeof(char));
+	char *reprs     = malloc(program_length * sizeof(char) * 10);
+	memset(reprs, 0, program_length * sizeof(char) * 10);
 	uint32_t r_index = 0;
 
 	int tokenc, r;
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
 
 	l_index--;
 	Node *tree = tree_make(tokens, tokenc, lines, l_index);
-	//tree_print(&tree);
+	//tree_print(tree);
 	
 	char *assembly;
 	assembly = compile(tree, l_index, tokenc);
