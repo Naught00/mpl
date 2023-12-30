@@ -176,8 +176,8 @@ int main(int argc, char **argv) {
 	//tree_print(&tree);
 	
 	char *assembly;
-	//assembly = compile(tree, tokenc);
-	//printf("%s", assembly);
+	assembly = compile(tree, l_index, tokenc);
+	printf("%s", assembly);
 
 	FILE *as = fopen("/tmp/a.s", "w+");
 	if (as == NULL) {
@@ -185,15 +185,15 @@ int main(int argc, char **argv) {
 		return 3;
 	}
 
-	////fprintf(as, "%s", assembly);
-	//fclose(as);
+	fprintf(as, "%s", assembly);
+	fclose(as);
 
-	//system("as -o /tmp/tmp.o /tmp/a.s");
-	//system("ld /tmp/tmp.o -o a.out");
-	//remove("/tmp/a.s");
-	//remove("/tmp/tmp.o");
+	system("as -o /tmp/tmp.o /tmp/a.s");
+	system("ld /tmp/tmp.o -o a.out");
+	remove("/tmp/a.s");
+	remove("/tmp/tmp.o");
 
-	//free(assembly);
+	free(assembly);
 	//token_delete(tokens, tokenc);
 	//@TODO free the tree
 }

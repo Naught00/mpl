@@ -3,7 +3,6 @@ run:
 	./mpl tests/new9.txt
 debug:
 	cc -g mpl.c parser.c -o mpl
-	seergdb ./mpl
 release:
 	cc -O3 mpl.c parser.c out.c -o mpl
 analyze:

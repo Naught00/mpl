@@ -2,6 +2,6 @@
 #define OUT_H
 #include "parser.h"
 
-char *compile(Node root, int tokenc);
+char *compile(Node *tree, uint32_t l_size, int tokenc);
 
 #endif
