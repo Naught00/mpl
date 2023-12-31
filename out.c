@@ -56,7 +56,7 @@ char *compile(Node *tree, uint32_t l_size, int tokenc) {
 
 	char *exit = "exit:\n"
 		     "\tmovq %rdi, %rbx\n"
-		     "\tmovq $0x3C, %rax\n"
+		     "\tmovq $0x3c, %rax\n"
 		     "\tsyscall\n";
 	int exit_length = strlen(exit);
 	memmove(&assembly[asm_size], exit, exit_length);

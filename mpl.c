@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
 	remove("/tmp/a.s");
 	remove("/tmp/tmp.o");
 
-	free(assembly);
+	//free(assembly);
 	//token_delete(tokens, tokenc);
 	//@TODO free the tree
 }

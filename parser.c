@@ -11,6 +11,13 @@ struct npool {
 	uint32_t p_index;
 };
 
+struct narrpool {
+	Node **pool;
+	uint32_t p_index;
+};
+
+struct narrpool narrs;
+
 static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, int *stack_index, struct npool *nodes);
 static void determine_operator(Node *root, Token *tokens, int tokenc, int token_index);
 static void tree_print_iterate(Node *root, Node **stack, int *stack_index);
@@ -24,7 +31,7 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 		case OPERATOR: 
 			if (open_count == close_count) {
 				root->token    = &tokens[i];
-				root->children = malloc(2 * sizeof(Node *));
+				root->children = &narrs.pool[narrs.p_index += 2];
 				done = true;
 			}
 			break;
@@ -36,7 +43,7 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 			break;
 		case ASSIGNMENT:
 			root->token    = &tokens[i];
-			root->children = malloc(2 * sizeof(Node *));
+			root->children = &narrs.pool[narrs.p_index += 2];
 			done = true;
 			break;
 		case SEMI_COLON:
@@ -47,6 +54,10 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 
 Node *tree_make(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 	Node *lines = malloc(l_size * sizeof(Node));
+
+	//@FIXME Make this not needed
+	narrs.pool    = malloc(tokenc * sizeof(Node *));
+	narrs.p_index = 0;
 
 	int i;
 	for (i = 0; i < l_size; i++) {
