@@ -7,7 +7,8 @@
 struct Node {
 	Token *token;
 	int starting_token;
-	struct Node **children;
+	struct Node *children;
+	uint32_t childc;
 
 	bool children_added;
 };

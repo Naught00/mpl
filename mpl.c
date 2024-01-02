@@ -172,26 +172,27 @@ int main(int argc, char **argv) {
 	token_print(tokens, tokenc);
 
 	l_index--;
-	Node *tree = tree_make(tokens, tokenc, lines, l_index);
+	//Node *tree = tree_make(tokens, tokenc, lines, l_index);
+	shunting(tokens, tokenc, lines, l_index);
 	//tree_print(tree);
 	
-	char *assembly;
-	assembly = compile(tree, l_index, tokenc);
-	printf("%s", assembly);
+//	char *assembly;
+//	assembly = compile(tree, l_index, tokenc);
+//	printf("%s", assembly);
 
-	FILE *as = fopen("/tmp/a.s", "w+");
-	if (as == NULL) {
-		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
-		return 3;
-	}
-
-	fprintf(as, "%s", assembly);
-	fclose(as);
-
-	system("as -o /tmp/tmp.o /tmp/a.s");
-	system("ld /tmp/tmp.o -o a.out");
-	remove("/tmp/a.s");
-	remove("/tmp/tmp.o");
+//	FILE *as = fopen("/tmp/a.s", "w+");
+//	if (as == NULL) {
+//		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
+//		return 3;
+//	}
+//
+//	fprintf(as, "%s", assembly);
+//	fclose(as);
+//
+//	system("as -o /tmp/tmp.o /tmp/a.s");
+//	system("ld /tmp/tmp.o -o a.out");
+//	remove("/tmp/a.s");
+//	remove("/tmp/tmp.o");
 
 	//free(assembly);
 	//token_delete(tokens, tokenc);
