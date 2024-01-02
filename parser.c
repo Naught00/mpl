@@ -10,6 +10,8 @@ struct npool {
 	Node *pool;
 	uint32_t p_index;
 };
+//@TEST
+#include "testnewc.c"
 
 struct narrpool {
 	Node **pool;
@@ -53,6 +55,8 @@ static void determine_operator(Node *root, Token *tokens, int tokenc, int token_
 }
 
 Node *tree_make(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
+	shunting(tokens, tokenc, line_starts, l_size);
+	exit(10);
 	Node *lines = malloc(l_size * sizeof(Node));
 
 	//@FIXME Make this not needed

@@ -1,6 +1,6 @@
 run:
 	cc mpl.c parser.c out.c -o mpl
-	./mpl tests/new9.txt
+	./mpl tests/new13.txt
 debug:
 	cc -g mpl.c parser.c out.c -o mpl
 release:
