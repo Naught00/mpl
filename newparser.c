@@ -24,7 +24,7 @@ uint32_t precedence(Token op) {
 	}
 }
 
-char *shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
+Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 	uint32_t o_index, d_index;
 	size_t tarrsz;
 
@@ -85,21 +85,36 @@ char *shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 		switch (dstack[i].type) {
 		case OPERATOR: case ASSIGNMENT:
 			Node *parent     = &nodes.pool[nodes.p_index];
+			parent->flags    = 0x0;
 			parent->token    = &dstack[i];
+
 			parent->children = &nodes.pool[nodes.p_index - 2]; 
 			parent->childc   = 2;
+			for (j = 0; j < 2; j++) {
+				parent->children[j].flags |= N_parented;
+			}
 			nodes.p_index++;
 			break;
 		case INTEGER: case IDENTIFIER_L: case IDENTIFIER_R:
 			Node *child  = &nodes.pool[nodes.p_index++];
 			child->token = &dstack[i];
+			child->flags = 0x0;
 			break;
 		case SEMI_COLON:
 			lines[line_index++] = &nodes.pool[nodes.p_index - 1];
 			break;
 		}
 	}
+
 	for (i = 0; i < tokenc - 3; i++) {
 		printf("%s", nodes.pool[i].token->x);
 	}
+	putchar('\n');
+	for (i = 0; i < line_index; i++) {
+		printf("%s\n", lines[i]->token->x);
+		printf("%s\n", lines[i]->children[0].token->x);
+
+		printf("%s\n", lines[i]->children[1].token->x);
+	}
+	return lines;
 }
