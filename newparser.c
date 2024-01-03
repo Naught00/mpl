@@ -32,11 +32,12 @@ Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 	o_index = 0;
 
 	tarrsz = tokenc * sizeof(Token);
-	Token *dstack = malloc(tarrsz);
-	memset(dstack, 0, tarrsz);
+	Token *dstack = malloc(tarrsz * 2);
+	memset(dstack, 0, tarrsz * 2);
 	d_index = 0;
 
-	uint32_t i, j, len;
+	int i, j;
+	size_t len;
 	len = 0;
 	Token next, topop;
 	for (i = 0; i < tokenc; i++) {
@@ -78,9 +79,10 @@ Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 	nodes.pool = malloc(tokenc * sizeof(Node));
 	nodes.p_index = 0;
 
-	Node **lines = malloc(l_size * sizeof(Node *));
+	Node **lines = malloc(tokenc * sizeof(Node *));
 
 	uint32_t line_index;
+	int k;
 	for (i = 0, line_index = 0; i < tokenc; i++) {
 		switch (dstack[i].type) {
 		case OPERATOR: case ASSIGNMENT:
@@ -88,10 +90,13 @@ Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 			parent->flags    = 0x0;
 			parent->token    = &dstack[i];
 
-			parent->children = &nodes.pool[nodes.p_index - 2]; 
-			parent->childc   = 2;
-			for (j = 0; j < 2; j++) {
-				parent->children[j].flags |= N_parented;
+			for (j = 1, k = nodes.p_index - 1; j >= 0; k--)  {
+				if (!(nodes.pool[k].flags & NF_adopted)) {
+					parent->children[j] = &nodes.pool[k];
+					puts(parent->children[j]->token->x);
+					nodes.pool[k].flags |= NF_adopted;
+					j--;
+				}
 			}
 			nodes.p_index++;
 			break;
@@ -106,15 +111,18 @@ Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
 		}
 	}
 
-	for (i = 0; i < tokenc - 3; i++) {
+	puts("Tokens:");
+	for (i = 0; i < nodes.p_index; i++) {
 		printf("%s", nodes.pool[i].token->x);
 	}
-	putchar('\n');
+	puts("\nLines:");
 	for (i = 0; i < line_index; i++) {
 		printf("%s\n", lines[i]->token->x);
-		printf("%s\n", lines[i]->children[0].token->x);
-
-		printf("%s\n", lines[i]->children[1].token->x);
+		printf("%s\n", lines[i]->children[0]->token->x);
+                                                     
+		printf("%s\n", lines[i]->children[1]->token->x);
+		putchar('\n');
 	}
+
 	return lines;
 }

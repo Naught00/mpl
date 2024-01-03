@@ -16,7 +16,7 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 
 char *registers[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
 
-char *compile(Node *tree, uint32_t l_size, int tokenc) {
+char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	int asm_size;
 	asm_size = 0;
 	printf("%d\n", tokenc);
@@ -40,7 +40,7 @@ char *compile(Node *tree, uint32_t l_size, int tokenc) {
 	uint32_t sp;
 	for (i = 0; i < l_size; i++) {
 		sp = 0;
-		stack[sp++] = &tree[i];
+		stack[sp++] = tree[i];
 		while (sp) {
 			cvisit(stack[--sp], stack, &sp, assembly, &asm_size, &current_stack_offset, &register_index);
 			stack[sp] = NULL;
@@ -66,7 +66,7 @@ char *compile(Node *tree, uint32_t l_size, int tokenc) {
 }
 
 static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index) {
-	if (!root->children || root->children_added) {
+	if (!root->children || root->flags & NF_children_added) {
 		switch (root->token->type) {
 		case INTEGER:
 			sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
@@ -98,7 +98,7 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 	}
 
 	stack[(*sp)++] = root;
-	root->children_added = true;
+	root->flags   |= NF_children_added;
 	
 	int i;
 	for (i = 1; i > -1; i--) {

@@ -4,22 +4,25 @@
 #include <stdint.h>
 #include "lexer.h"
 
-enum Node_Flags {
-	N_children_added = 0x1,
-	N_parented       = 0x2,
+enum Node_Flags{
+	NF_children_added = 0x1,
+	NF_adopted       = 0x2,
 };
 
 struct Node {
 	Token *token;
 	int starting_token;
-	struct Node *children;
-	uint32_t childc;
+
+	//@FIXME non-bin ops
+	struct Node *children[2];
+	//uint32_t childc;
 
 	uint8_t flags;
 };
 
 typedef struct Node Node;
 
+Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size);
 Node tree(Token *tokens, int tokenc);
 void tree_print(Node *root);
 
