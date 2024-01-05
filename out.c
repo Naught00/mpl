@@ -7,6 +7,9 @@
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb_sprintf.h"
+
 #define LEFT  0
 #define RIGHT 1
 
@@ -19,7 +22,6 @@ char *registers[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
 char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	int asm_size;
 	asm_size = 0;
-	printf("%d\n", tokenc);
 	char *assembly      = malloc(tokenc * 100);
 	memset(assembly, 0, tokenc * 100);
 
@@ -69,11 +71,11 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 	if (!root->children || root->flags & NF_children_added) {
 		switch (root->token->type) {
 		case INTEGER:
-			sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
+			stbsp_sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case OPERATOR:
-			sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
+			stbsp_sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
 			*asm_size += 16;
 
 			--(*register_index);
@@ -81,14 +83,14 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 		case IDENTIFIER_R: {
 			int variable_offset = shget(variables, root->token->x);
 
-			sprintf(&assembly[*asm_size], "\tmovq 0x%x(%rsp), %s\n", variable_offset, registers[(*register_index)++]);
+			stbsp_sprintf(&assembly[*asm_size], "\tmovq 0x%x(%rsp), %s\n", variable_offset, registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		}
 		case ASSIGNMENT:
 			shput(variables, root->children[LEFT]->token->x, *current_stack_offset);
 
-			sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%rsp)\n", registers[--(*register_index)], *current_stack_offset);
+			stbsp_sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%rsp)\n", registers[--(*register_index)], *current_stack_offset);
 			*asm_size += strlen(&assembly[*asm_size]);
 
 			*current_stack_offset += 0x8;
