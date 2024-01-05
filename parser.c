@@ -1,204 +1,127 @@
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
-#include "lexer.h"
+#include <stdint.h>
+
 #include "parser.h"
+#include "lexer.h"
 
 struct npool {
 	Node *pool;
 	uint32_t p_index;
 };
-//@TEST
-#include "testnewc.c"
 
-struct narrpool {
-	Node **pool;
-	uint32_t p_index;
-};
-
-struct narrpool narrs;
-
-static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, int *stack_index, struct npool *nodes);
-static void determine_operator(Node *root, Token *tokens, int tokenc, int token_index);
-static void tree_print_iterate(Node *root, Node **stack, int *stack_index);
-
-static void determine_operator(Node *root, Token *tokens, int tokenc, int token_index) {
-	int i;
-	bool done = false;
-	int open_count, close_count;
-	for (i = token_index, open_count = 0, close_count = 0; i < tokenc && !done; i++) {
-		switch (tokens[i].type) {
-		case OPERATOR: 
-			if (open_count == close_count) {
-				root->token    = &tokens[i];
-				root->children = &narrs.pool[narrs.p_index += 2];
-				done = true;
-			}
-			break;
-		case OPEN_PARENTHESES: 
-			open_count++;
-			break;
-		case CLOSE_PARENTHESES: 
-			close_count++;
-			break;
-		case ASSIGNMENT:
-			root->token    = &tokens[i];
-			root->children = &narrs.pool[narrs.p_index += 2];
-			done = true;
-			break;
-		case SEMI_COLON:
-			return;
-		}
+//@FIXME precompute
+uint32_t precedence(Token op) {
+	switch (op.x[0]) {
+	case '(': return 6;
+	case '*': return 5;
+	case '/': return 4;
+	case '+': return 3;
+	case '-': return 2;
+	case ')': return 1;
+	case '=': return 0;
 	}
 }
 
-Node *tree_make(Token *tokens, int tokenc, int *line_starts, uint32_t l_size) {
-	shunting(tokens, tokenc, line_starts, l_size);
-	exit(10);
-	Node *lines = malloc(l_size * sizeof(Node));
+Node **shunting(Token *tokens, int tokenc, uint32_t l_size) {
+	uint32_t o_index, d_index;
+	size_t tarrsz;
 
-	//@FIXME Make this not needed
-	narrs.pool    = malloc(tokenc * sizeof(Node *));
-	narrs.p_index = 0;
+	Token opstack[256];
+	o_index = 0;
 
-	int i;
-	for (i = 0; i < l_size; i++) {
-		lines[i] = (Node) {NULL, line_starts[i], NULL, false};
-		printf("ls: %d\n", line_starts[i]);
-		determine_operator(&lines[i], tokens, tokenc, lines[i].starting_token);
+	tarrsz = tokenc * sizeof(Token);
+	Token *dstack = malloc(tarrsz * 2);
+	memset(dstack, 0, tarrsz * 2);
+	d_index = 0;
+
+	int i, j;
+	size_t len;
+	len = 0;
+	Token next, topop;
+	for (i = 0; i < tokenc; i++) {
+		switch (tokens[i].type) {
+		case OPERATOR: case ASSIGNMENT: 
+		case CLOSE_PARENTHESES: case OPEN_PARENTHESES:
+			next  = tokens[i];
+			if (o_index == 0) {
+				opstack[o_index++] = next;
+				break;
+			}
+			
+			topop = opstack[o_index - 1];
+			if (precedence(next) < precedence(topop)) {
+				dstack[d_index++] = topop;
+				--o_index;
+			}
+			opstack[o_index++] = next;
+			break;
+		case INTEGER: case IDENTIFIER_L: case IDENTIFIER_R:
+			dstack[d_index++] = tokens[i];
+			break;
+		case SEMI_COLON:
+			len    = o_index;
+			for (j = 0; j < len; j++)
+				dstack[d_index++] = opstack[--o_index];
+
+			dstack[d_index++] = tokens[i];
+			memset(opstack, 0, len);
+			break;
+		}
 	}
 
-	Node **stack = malloc(tokenc * sizeof(Node *));
-	for (i = 0; i < tokenc; i++)
-		stack[i] = NULL;
-
+	//for (i = 0; i < tokenc; i++) {
+	//	printf("%s", dstack[i].x);
+	//}
 	struct npool nodes;
 	nodes.pool = malloc(tokenc * sizeof(Node));
 	nodes.p_index = 0;
 
-	int sp;
-	for (i = 0; i < l_size; i++) {
-		sp = 0;
-		stack[sp++] = &lines[i];
-		while (sp) {
-			tree_iterate(stack[--sp], tokens, tokenc, stack, &sp, &nodes);
+	Node **lines = malloc(l_size * sizeof(Node *));
+
+	uint32_t line_index;
+	int k;
+	for (i = 0, line_index = 0; i < tokenc; i++) {
+		switch (dstack[i].type) {
+		case OPERATOR: case ASSIGNMENT:
+			Node *parent     = &nodes.pool[nodes.p_index];
+			parent->flags    = 0x0;
+			parent->token    = &dstack[i];
+
+			for (j = 1, k = nodes.p_index - 1; j >= 0; k--)  {
+				if (!(nodes.pool[k].flags & NF_adopted)) {
+					parent->children[j] = &nodes.pool[k];
+					//puts(parent->children[j]->token->x);
+					nodes.pool[k].flags |= NF_adopted;
+					j--;
+				}
+			}
+			nodes.p_index++;
+			break;
+		case INTEGER: case IDENTIFIER_L: case IDENTIFIER_R:
+			Node *child  = &nodes.pool[nodes.p_index++];
+			child->token = &dstack[i];
+			child->flags = 0x0;
+			break;
+		case SEMI_COLON:
+			lines[line_index++] = &nodes.pool[nodes.p_index - 1];
+			break;
 		}
 	}
 
-	free(stack);
+//	puts("Tokens:");
+//	for (i = 0; i < nodes.p_index; i++) {
+//		printf("%s", nodes.pool[i].token->x);
+//	}
+//	puts("\nLines:");
+//	for (i = 0; i < line_index; i++) {
+//		printf("%s\n", lines[i]->token->x);
+//		printf("%s\n", lines[i]->children[0]->token->x);
+//                                                     
+//		printf("%s\n", lines[i]->children[1]->token->x);
+//		putchar('\n');
+//	}
 
 	return lines;
-}
-
-static void tree_iterate(Node *root, Token *tokens, int tokenc, Node **stack, int *stack_index, struct npool *nodes) {
-	int i, j;
-	for (i = root->starting_token, j = 0; j < 2 && i < tokenc; i++) {
-		switch (tokens[i].type) {
-		case INTEGER: {
-			Node *child = &nodes->pool[nodes->p_index++];
-			printf("TOKEN: %s\n", tokens[i].x);
-
-			child->token    = &tokens[i];
-			child->children = NULL;
-
-			root->children[j] = child;
-			j++;
-			break;
-		}
-		case OPEN_PARENTHESES: {
-			Node *child = &nodes->pool[nodes->p_index++];
-
-			int starting_token = i + 1;
-			determine_operator(child, tokens, tokenc, starting_token);
-
-			// Walk the token stream until we pass out the 
-			// expression.
-			int open_count, close_count;
-			open_count  = 0;
-			close_count = 0;
-			do {
-				switch (tokens[i].type) {
-				case OPEN_PARENTHESES : open_count++ ; break;
-				case CLOSE_PARENTHESES: close_count++; break;
-				}
-
-				i++;
-			} while (open_count != close_count);
-
-			child->starting_token = starting_token;
-			child->children_added = false;
-
-			stack[(*stack_index)++] = child;
-			root->children[j] = child;
-			j++;
-			break;
-		}
-		case IDENTIFIER_L: {
-			Node *left = &nodes->pool[nodes->p_index++];
-
-			left->token          = &tokens[i];
-			puts(left->token->x);
-			left->children       = NULL;
-			left->children_added = false;
-
-			root->children[j]    = left;
-			j++;
-
-			Node *right = &nodes->pool[nodes->p_index++];
-			int starting_token = i + 2;
-			determine_operator(right, tokens, tokenc, starting_token);
-			if (right->children) {
-				right->starting_token  = starting_token;
-				right->children_added  = false;
-
-				stack[(*stack_index)++] = right;
-				root->children[j]       = right;
-				j++;
-			} else {
-				//free(right);
-			}
-			break;
-		}
-		case IDENTIFIER_R: {
-			Node *child = &nodes->pool[nodes->p_index++];
-			printf("TOKEN: %s\n", tokens[i].x);
-
-			child->token    = &tokens[i];
-			child->children = NULL;
-
-			root->children[j] = child;
-			j++;
-			break;
-		}
-		}
-	}
-	printf("pindex: %d\n", nodes->p_index);
-}
-
-void tree_print(Node *root) {
-	Node **stack = malloc(100 * sizeof(Node *));
-
-	int i;
-	for (i = 0; i < 100; i++)
-		stack[i] = NULL;
-
-	printf("%s\n", root->token->x);
-
-	int sp = 0;
-	stack[sp++] = root;
-	while (sp) {
-		tree_print_iterate(stack[--sp], stack, &sp);
-	}
-
-	free(stack);
-}
-
-static void tree_print_iterate(Node *root, Node **stack, int *stack_index) {
-	int i, x;
-	for (i = 1, x = 0; root->children != NULL && root->children[i - 1] != NULL; --i, x++) {
-		printf("%s ", root->children[x]->token->x);
-		stack[(*stack_index)++] = root->children[i];
-	}
 }
