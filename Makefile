@@ -2,7 +2,7 @@ all:
 	cc -g mpl.c newparser.c out.c -o mpl
 run:
 	cc mpl.c newparser.c out.c -o mpl
-	./mpl tests/new14.txt
+	./mpl tests/new15.txt
 debug:
 	cc -g mpl.c parser.c out.c -o mpl
 release:

@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
-	printf("%s", program);
+	//printf("%s", program);
 
 	Token *tokens = malloc(program_length * sizeof(Token));
 
@@ -45,9 +45,7 @@ int main(int argc, char **argv) {
 	int tokenc, r;
 	char ch;
 	bool lvalue      = true;
-	int *lines       = malloc(program_length * sizeof(int));
 	uint32_t l_index = 0;
-	lines[l_index++] = 0;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -64,7 +62,7 @@ int main(int argc, char **argv) {
 			i--;
 
 			repr[r] = '\0';
-			printf("repr: %s\n", repr);
+			//printf("repr: %s\n", repr);
 			r_index += r + 1;
 
 			Token token = {INTEGER, repr};
@@ -96,7 +94,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case '(': {
-			printf("%c\n", ch);
+			//printf("%c\n", ch);
 			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -111,7 +109,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case ')': {
-			printf("%c\n", ch);
+			//printf("%c\n", ch);
 			char *repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -136,7 +134,7 @@ int main(int argc, char **argv) {
 			tokenc++;
 
 			lvalue = true;
-			lines[l_index++] = tokenc;
+			l_index++;
 			break;
 		}
 		default: {
@@ -170,11 +168,10 @@ int main(int argc, char **argv) {
 	}
 
 	free(program);
-	token_print(tokens, tokenc);
+//	token_print(tokens, tokenc);
 
-	l_index--;
 	//Node *tree = tree_make(tokens, tokenc, lines, l_index);
-	Node **tree  = shunting(tokens, tokenc, lines, l_index);
+	Node **tree  = shunting(tokens, tokenc, l_index);
 	//tree_print(tree);
 	
 	char *assembly;

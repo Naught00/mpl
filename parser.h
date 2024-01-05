@@ -22,7 +22,7 @@ struct Node {
 
 typedef struct Node Node;
 
-Node **shunting(Token *tokens, int tokenc, int *line_starts, uint32_t l_size);
+Node **shunting(Token *tokens, int tokenc, uint32_t l_size);
 Node tree(Token *tokens, int tokenc);
 void tree_print(Node *root);
 
