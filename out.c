@@ -84,14 +84,14 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 		case IDENTIFIER_R: {
 			int variable_offset = shget(variables, root->token->x);
 
-			stbsp_sprintf(&assembly[*asm_size], "\tmovq 0x%x(%rsp), %s\n", variable_offset, registers[(*register_index)++]);
+			stbsp_sprintf(&assembly[*asm_size], "\tmovq 0x%x(%%rsp), %s\n", variable_offset, registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		}
 		case ASSIGNMENT:
 			shput(variables, root->children[LEFT]->token->x, *current_stack_offset);
 
-			stbsp_sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%rsp)\n", registers[--(*register_index)], *current_stack_offset);
+			stbsp_sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%%rsp)\n", registers[--(*register_index)], *current_stack_offset);
 			*asm_size += strlen(&assembly[*asm_size]);
 
 			*current_stack_offset += 0x8;

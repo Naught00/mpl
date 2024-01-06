@@ -79,6 +79,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t l_size) {
 	//}
 	struct npool nodes;
 	nodes.pool = malloc(tokenc * sizeof(Node));
+	memset(nodes.pool, 0, tokenc * sizeof(Node));
 	nodes.p_index = 0;
 
 	Node **lines = malloc(l_size * sizeof(Node *));

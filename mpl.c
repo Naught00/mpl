@@ -208,21 +208,21 @@ int main(int argc, char **argv) {
 	
 	char *assembly;
 	assembly = compile(tree, l_index, tokenc);
-	//printf("%s", assembly);
+	printf("%s", assembly);
 
-	//FILE *as = fopen("/tmp/a.s", "w+");
-	//if (as == NULL) {
-	//	fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
-	//	return 3;
-	//}
+	FILE *as = fopen("/tmp/a.s", "w+");
+	if (as == NULL) {
+		fprintf(stderr, "Error creating temporary assembly file! %d\n", errno);
+		return 3;
+	}
 
-	//fprintf(as, "%s", assembly);
-	//fclose(as);
+	fprintf(as, "%s", assembly);
+	fclose(as);
 
-	//system("as -o /tmp/tmp.o /tmp/a.s");
-	//system("ld /tmp/tmp.o -o a.out");
-	//remove("/tmp/a.s");
-	//remove("/tmp/tmp.o");
+	system("as -o /tmp/tmp.o /tmp/a.s");
+	system("ld /tmp/tmp.o -o a.out");
+	remove("/tmp/a.s");
+	remove("/tmp/tmp.o");
 
 	//free(assembly);
 	//token_delete(tokens, tokenc);
