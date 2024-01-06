@@ -12,18 +12,19 @@ struct npool {
 };
 
 //@FIXME precompute
-uint32_t precedence(Token op) {
-	switch (op.x[0]) {
-	case '(': return 6;
-	case '*': return 5;
-	case '/': return 4;
-	case '+': return 3;
-	case '-': return 2;
-	case ')': return 1;
-	case '=': return 0;
-	}
-}
+//uint32_t precedence(Token op) {
+//	switch (op.x[0]) {
+//	case '(': return 6;
+//	case '*': return 5;
+//	case '/': return 4;
+//	case '+': return 3;
+//	case '-': return 2;
+//	case ')': return 1;
+//	case '=': return 0;
+//	}
+//}
 
+#define precedence(op) op.type
 Node **shunting(Token *tokens, int tokenc, uint32_t l_size) {
 	uint32_t o_index, d_index;
 	size_t tarrsz;
@@ -42,8 +43,10 @@ Node **shunting(Token *tokens, int tokenc, uint32_t l_size) {
 	Token next, topop;
 	for (i = 0; i < tokenc; i++) {
 		switch (tokens[i].type) {
-		case OPERATOR: case ASSIGNMENT: 
+		case ASSIGNMENT: 
 		case CLOSE_PARENTHESES: case OPEN_PARENTHESES:
+		case ADD:      case MINUS:
+		case MULTIPLY: case DIVIDE:
 			next  = tokens[i];
 			if (o_index == 0) {
 				opstack[o_index++] = next;
@@ -85,6 +88,8 @@ Node **shunting(Token *tokens, int tokenc, uint32_t l_size) {
 	for (i = 0, line_index = 0; i < tokenc; i++) {
 		switch (dstack[i].type) {
 		case OPERATOR: case ASSIGNMENT:
+		case ADD:      case MINUS:
+		case MULTIPLY: case DIVIDE:
 			Node *parent     = &nodes.pool[nodes.p_index];
 			parent->flags    = 0x0;
 			parent->token    = &dstack[i];

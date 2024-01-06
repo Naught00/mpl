@@ -74,7 +74,8 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 			stbsp_sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
-		case OPERATOR:
+		case ADD:      case MINUS:
+		case MULTIPLY: case DIVIDE:
 			stbsp_sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
 			*asm_size += 16;
 

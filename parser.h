@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "lexer.h"
 
-enum Node_Flags{
+enum Node_Flags {
 	NF_children_added = 0x1,
 	NF_adopted       = 0x2,
 };

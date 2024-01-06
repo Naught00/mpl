@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	uint32_t r_index = 0;
 
 	int tokenc, r;
-	char ch;
+	char ch, *repr, *identifier;
 	bool lvalue      = true;
 	uint32_t l_index = 0;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 		switch (ch) {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9': {
-			char *repr = &reprs[r_index];
+			repr = &reprs[r_index];
 			r = 0;
 
 			while (isdigit(program[i])) {
@@ -70,20 +70,52 @@ int main(int argc, char **argv) {
 			tokenc++;
 			break;
 		}
-		case '+': case '-':
-		case '*': case '/': {
-			char *repr = &reprs[r_index];
+		case '+': {
+			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
 
-			Token token = {OPERATOR, repr};
+			Token token = {ADD, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		}
+		case '-': {
+			repr = &reprs[r_index];
+			repr[0] = ch;
+			repr[1] = '\0';
+			r_index += 2;
+
+			Token token = {MINUS, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		}
+		case '*': {
+			repr = &reprs[r_index];
+			repr[0] = ch;
+			repr[1] = '\0';
+			r_index += 2;
+
+			Token token = {MULTIPLY, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		}
+		case '/': {
+			repr = &reprs[r_index];
+			repr[0] = ch;
+			repr[1] = '\0';
+			r_index += 2;
+
+			Token token = {DIVIDE, repr};
 			tokens[tokenc] = token;
 			tokenc++;
 			break;
 		}
 		case '=': {
-			char *repr = &reprs[r_index];
+			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
@@ -95,7 +127,7 @@ int main(int argc, char **argv) {
 		}
 		case '(': {
 			//printf("%c\n", ch);
-			char *repr = &reprs[r_index];
+			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
@@ -110,7 +142,7 @@ int main(int argc, char **argv) {
 		}
 		case ')': {
 			//printf("%c\n", ch);
-			char *repr = &reprs[r_index];
+			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
@@ -124,7 +156,7 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case ';': {
-			char *repr = &reprs[r_index];
+			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
@@ -141,7 +173,7 @@ int main(int argc, char **argv) {
 			if (!isalpha(ch)) 
 				break;
 
-			char *identifier = &reprs[r_index];
+			identifier = &reprs[r_index];
 			r = 0;
 
 			while isalpha(program[i]) {
