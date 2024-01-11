@@ -11,11 +11,14 @@ enum Type {
 	MULTIPLY,
 	OPEN_PARENTHESES,
 
-	OPERATOR,
+	DECLERATION,
 	INTEGER,
 	IDENTIFIER_R,
 	IDENTIFIER_L,
 	SEMI_COLON,
+
+	/* Data types */
+	INT,
 };
 
 struct Token {

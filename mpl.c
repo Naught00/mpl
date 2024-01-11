@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+
 #include "lexer.h"
 #include "parser.h"
 #include "parser.h"
@@ -11,8 +12,17 @@
 
 #define MAX_VSIZE 256
 
+#include "stb_ds.h"
+
 static void token_delete(Token *tokens, int tokenc);
 static void token_print(Token *tokens, int tokenc);
+
+static struct {char *key; enum Type value;} *types;
+
+
+void init_types() {
+	shput(types, "int", INT);
+}
 
 int main(int argc, char **argv) {
 	if (argc < 2) {
@@ -33,7 +43,9 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
-	//printf("%s", program);
+	//puts(program);
+
+	init_types();
 
 	Token *tokens = malloc(program_length * sizeof(Token));
 
@@ -46,6 +58,7 @@ int main(int argc, char **argv) {
 	char ch, *repr, *identifier;
 	bool lvalue      = true;
 	uint32_t l_index = 0;
+	enum Type data_type;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -185,7 +198,10 @@ int main(int argc, char **argv) {
 			r_index += r + 1;
 
 			Token token = {.x = identifier};
-			if (lvalue) {
+			data_type   = shget(types, identifier);
+			if (data_type) {
+				token.type = data_type;
+			} else if (lvalue) {
 				token.type = IDENTIFIER_L; 
 				lvalue = false;
 			} else {
@@ -203,7 +219,7 @@ int main(int argc, char **argv) {
 //	token_print(tokens, tokenc);
 
 	//Node *tree = tree_make(tokens, tokenc, lines, l_index);
-	Node **tree  = shunting(tokens, tokenc, l_index);
+	Node **tree  = shunting(tokens, tokenc, &l_index);
 	//tree_print(tree);
 	
 	char *assembly;
@@ -243,7 +259,7 @@ static void token_print(Token *tokens, int tokenc) {
 		switch (tokens[i].type) {
 		case INTEGER: printf("INTEGER: %s\n", tokens[i].x); break;
 		case ASSIGNMENT: printf("ASSIGNMENT: %s\n", tokens[i].x); break;
-		case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
+		//case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
 		case IDENTIFIER_L: printf("IDENTIFIER_L: %s\n", tokens[i].x); break;
 		case IDENTIFIER_R: printf("IDENTIFIER_R: %s\n", tokens[i].x); break;
 		case OPEN_PARENTHESES: printf("Open PARENTHESES: %s\n", tokens[i].x); break;

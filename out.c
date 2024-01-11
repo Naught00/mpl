@@ -13,19 +13,27 @@
 #define LEFT  0
 #define RIGHT 1
 
-static struct {char *key; int value;} *variables = NULL;
+static struct {
+	char *key;
+       	int value;
+} *variables = NULL;
 
 static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
 
-char *registers[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
+char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
+char *registersl[] = {"%eax", "%ebx", "%ecx", "%edx", "%edi"};
 
 char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	int asm_size;
 	asm_size = 0;
-	char *assembly      = malloc(tokenc * 100);
+	char *assembly = malloc(tokenc * 100);
 	memset(assembly, 0, tokenc * 100);
 
-	char *start = ".section .text\n.global _start\n_start:\n\tsub $0x40, %rsp\n";
+	char *start = ".section .text\n"
+	       	      ".global _start\n"
+		      "_start:\n"
+		      "sub $0x40, %rsp\n";
+
 	int start_length = strlen(start);
 	memmove(assembly, start, start_length);
 	asm_size += start_length;
@@ -44,22 +52,28 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 		sp = 0;
 		stack[sp++] = tree[i];
 		while (sp) {
-			cvisit(stack[--sp], stack, &sp, assembly, &asm_size, &current_stack_offset, &register_index);
+			cvisit(stack[--sp], stack, &sp,
+				       	assembly, &asm_size,
+				       	&current_stack_offset,
+				       	&register_index
+			      );
 			stack[sp] = NULL;
 		}
 	}
-
 	free(stack);
 
-	char *end = "\tmovq %rax, %rdi\n\tcall exit\n\tadd $0x40, %rsp\n\tret\n";
+	char *end = "\tmovq %rax, %rdi\n"
+		    "\tcall exit\n"
+		    "\tadd $0x40, %rsp\n"
+		    "\tret\n";
 	int end_length = strlen(end);
 	memmove(&assembly[asm_size], end, end_length);
 	asm_size += end_length;
 
 	char *exit = "exit:\n"
-		     "\tmovq %rdi, %rbx\n"
-		     "\tmovq $0x3c, %rax\n"
-		     "\tsyscall\n";
+		     "movq %rdi, %rbx\n"
+		     "movq $0x3c, %rax\n"
+		     "syscall\n";
 	int exit_length = strlen(exit);
 	memmove(&assembly[asm_size], exit, exit_length);
 	asm_size += exit_length;
@@ -67,35 +81,62 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	return assembly;
 }
 
-static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index) {
+static inline void cvisit(Node *root, Node **stack, uint32_t *sp, 
+		          char *assembly, int *asm_size, 
+		          int *current_stack_offset, int *register_index) 
+{
+	int variable_offset;
+
 	if (!root->children || root->flags & NF_children_added) {
 		switch (root->token->type) {
 		case INTEGER:
-			stbsp_sprintf(&assembly[*asm_size], "\tmovq $0x%x, %s\n", atoi(root->token->x), registers[(*register_index)++]);
+			stbsp_sprintf(&assembly[*asm_size], 
+					"\tmovl $0x%x, %s\n",
+				       	atoi(root->token->x),
+				       	registersl[*register_index]
+				     );
+			*register_index += 1;
+
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case ADD:      case MINUS:
 		case MULTIPLY: case DIVIDE:
-			stbsp_sprintf(&assembly[*asm_size], "\tadd %s, %s\n", registers[(*register_index) - 1], registers[(*register_index) - 2]);
+			stbsp_sprintf(&assembly[*asm_size],
+					"\tadd %s, %s\n",
+				       	registersl[*register_index - 1],
+				       	registersl[*register_index - 2]
+				     );
+
 			*asm_size += 16;
 
-			--(*register_index);
+			*register_index -= 1;
 			break;
-		case IDENTIFIER_R: {
-			int variable_offset = shget(variables, root->token->x);
+		case IDENTIFIER_R:
+			variable_offset = shget(variables, root->token->x);
 
-			stbsp_sprintf(&assembly[*asm_size], "\tmovq 0x%x(%%rsp), %s\n", variable_offset, registers[(*register_index)++]);
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"\tmovl 0x%x(%%rsp), %s\n",
+				       	variable_offset, 
+				        registersl[*register_index]
+				     );
+			*register_index += 1;
+
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
-		}
-		case ASSIGNMENT:
+		case INT:
 			shput(variables, root->children[LEFT]->token->x, *current_stack_offset);
-
-			stbsp_sprintf(&assembly[*asm_size], "\tmovq %s, 0x%x(%%rsp)\n", registers[--(*register_index)], *current_stack_offset);
-			*asm_size += strlen(&assembly[*asm_size]);
-
 			*current_stack_offset += 0x8;
 			break;
+		case ASSIGNMENT:
+			variable_offset = shget(variables, root->children[LEFT]->token->x);
+
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"\tmovl %s, 0x%x(%%rsp)\n",
+				       	registersl[--*register_index],
+				       	variable_offset
+				     );
+
+			*asm_size += strlen(&assembly[*asm_size]);
 		}
 		return;
 	}

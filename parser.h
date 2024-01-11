@@ -11,7 +11,7 @@ enum Node_Flags {
 
 struct Node {
 	Token *token;
-	int starting_token;
+	enum Type dtype;
 
 	//@FIXME non-bin ops
 	struct Node *children[2];
@@ -22,7 +22,7 @@ struct Node {
 
 typedef struct Node Node;
 
-Node **shunting(Token *tokens, int tokenc, uint32_t l_size);
+Node **shunting(Token *tokens, int tokenc, uint32_t *l_size);
 Node tree(Token *tokens, int tokenc);
 void tree_print(Node *root);
 
