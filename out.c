@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "parser.h"
 #include "lexer.h"
 
@@ -18,6 +19,11 @@ static struct {
        	int value;
 } *variables = NULL;
 
+static struct {
+	char *key;
+       	int value;
+} *procedures = NULL;
+
 static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
 
 char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
@@ -32,7 +38,7 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	char *start = ".section .text\n"
 	       	      ".global _start\n"
 		      "_start:\n"
-		      "sub $0x40, %rsp\n";
+		      "\tsub $0x40, %rsp\n";
 
 	int start_length = strlen(start);
 	memmove(assembly, start, start_length);
@@ -45,9 +51,9 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	}
 
 	int current_stack_offset = 0x0;
-	int register_index = 0;
-
+	int register_index       = 0;
 	uint32_t sp;
+	printf("lsize: %d\n", l_size);
 	for (i = 0; i < l_size; i++) {
 		sp = 0;
 		stack[sp++] = tree[i];
@@ -71,9 +77,9 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	asm_size += end_length;
 
 	char *exit = "exit:\n"
-		     "movq %rdi, %rbx\n"
-		     "movq $0x3c, %rax\n"
-		     "syscall\n";
+		     "\tmovq %rdi, %rbx\n"
+		     "\tmovq $0x3c, %rax\n"
+		     "\tsyscall\n";
 	int exit_length = strlen(exit);
 	memmove(&assembly[asm_size], exit, exit_length);
 	asm_size += exit_length;
@@ -126,6 +132,29 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 		case INT:
 			shput(variables, root->children[LEFT]->token->x, *current_stack_offset);
 			*current_stack_offset += 0x8;
+			break;
+		case OPEN_BRACE:
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"\tsub $0x%x, %%rsp\n",
+					*((size_t *) root->auxiliary)
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
+			break;
+		case CLOSE_BRACE:
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"\tadd $0x%x, %%rsp\n",
+					*((size_t *) root->auxiliary)
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
+			break;
+		case PROC_DECLARATION:
+			break;
+		case PROC_DEFINITION:
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"%s:\n",
+					root->token->x
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case ASSIGNMENT:
 			variable_offset = shget(variables, root->children[LEFT]->token->x);

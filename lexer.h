@@ -1,6 +1,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+//@Fix change enum type when gcc supports
+//C23
 enum Type {
 	/* Precedence */
 	ASSIGNMENT,
@@ -10,8 +12,13 @@ enum Type {
 	DIVIDE,
 	MULTIPLY,
 	OPEN_PARENTHESES,
+	PROC_CALL,
 
-	DECLERATION,
+	PROC_DECLARATION,
+	PROC_DEFINITION,
+	OPEN_BRACE,
+	CLOSE_BRACE,
+	COMMA,
 	INTEGER,
 	IDENTIFIER_R,
 	IDENTIFIER_L,

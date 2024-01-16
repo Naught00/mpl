@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
-	//puts(program);
+	puts(program);
 
 	init_types();
 
@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
 	int tokenc, r;
 	char ch, *repr, *identifier;
 	bool lvalue      = true;
+	bool declaration = false;
 	uint32_t l_index = 0;
 	enum Type data_type;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
@@ -168,6 +169,32 @@ int main(int argc, char **argv) {
 			tokenc++;
 			break;
 		}
+		case '{': {
+			repr = &reprs[r_index];
+			repr[0] = ch;
+			repr[1] = '\0';
+			r_index += 2;
+
+			enum Type type;
+			type = OPEN_BRACE;
+
+			Token token = {type, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		} 
+		case '}': {
+			repr = &reprs[r_index];
+			puts("closing...");
+			repr[0] = ch;
+			repr[1] = '\0';
+			r_index += 2;
+
+			Token token = {CLOSE_BRACE, repr};
+			tokens[tokenc] = token;
+			tokenc++;
+			break;
+		} 
 		case ';': {
 			repr = &reprs[r_index];
 			repr[0] = ch;
@@ -200,7 +227,13 @@ int main(int argc, char **argv) {
 			Token token = {.x = identifier};
 			data_type   = shget(types, identifier);
 			if (data_type) {
-				token.type = data_type;
+				token.type  = data_type;
+				declaration = true;
+			} else if (program[i + 1] == '(' && declaration) {
+				token.type = PROC_DECLARATION;
+				declaration = false;
+			} else if (program[i + 1] == '(') {
+				token.type = PROC_CALL;
 			} else if (lvalue) {
 				token.type = IDENTIFIER_L; 
 				lvalue = false;
@@ -215,6 +248,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	printf("%d\n", tokenc);
 	free(program);
 //	token_print(tokens, tokenc);
 
@@ -224,7 +258,9 @@ int main(int argc, char **argv) {
 	
 	char *assembly;
 	assembly = compile(tree, l_index, tokenc);
+	#ifdef DEBUG
 	printf("%s", assembly);
+	#endif
 
 	FILE *as = fopen("/tmp/a.s", "w+");
 	if (as == NULL) {
@@ -240,7 +276,7 @@ int main(int argc, char **argv) {
 	remove("/tmp/a.s");
 	remove("/tmp/tmp.o");
 
-	//free(assembly);
+	free(assembly);
 	//token_delete(tokens, tokenc);
 	//@TODO free the tree
 }
