@@ -74,7 +74,19 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			*l_size += 1;
 			break;
 		case PROC_DECLARATION:
-			proc_token = data.sp;
+			j = i;
+			while (tokens[j].type != CLOSE_PARENTHESES) {
+				j++;
+			}
+
+			if (tokens[j + 1].type == OPEN_BRACE) {
+				extra_tokens += 1;
+				
+				data.stack[data.sp - 2].type = PROC_DEFINITION;
+				push(data, tokens[j + 1]);
+				*l_size += 1;
+			}
+
 			i += 2;
 			while (tokens[i].type != CLOSE_PARENTHESES) {
 				if (tokens[i].type == COMMA) {
@@ -85,26 +97,20 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 				push(data, tokens[i]);
 				i += 2;
 			}
-
-			if (tokens[i + 1].type == OPEN_BRACE) {
-				push(data, _SEMI_COLON);
-				extra_tokens += 1;
-				
-				data.stack[proc_token].type = PROC_DEFINITION;
-				*l_size += 1;
-			}
+			i++;
 			
 			// chop off () and type;
 			extra_tokens -= 3;
 			break;
 		case INT:
 			push(data, tokens[i + 1]);
-			data.stack[data.sp - 1].type = DECLARATION_CHILD;
 			push(data, tokens[i]);
 
 			if (tokens[i + 1].type == PROC_DECLARATION) {
 				break;
 			}
+
+			data.stack[data.sp - 2].type = DECLARATION_CHILD;
 
 			switch (tokens[i + 2].type) {
 			case SEMI_COLON:
@@ -179,7 +185,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	curr_scope->vtypes     = NULL;
 	curr_scope->frame_size = 0;
 
-	struct vtypes_hm *procedures;
+	struct vtypes_hm *procedures = NULL;
 
 	uint64_t value; /* for types hashmap (see parser.h) */
 	uint32_t curr_offset = 0x4;
@@ -231,23 +237,23 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			parent->flags = 0x0;
 
 			/* skip type and ( */
-			i += 2;
+			//i += 2;
 			/* arguments */
-			for (k = 0; data.stack[i].type != SEMI_COLON; k++, i++) {
-				puts(data.stack[i].x);
-				Node *arg  = pool(nodes);
-				arg->flags = NF_adopted;
-				arg->token = &data.stack[i];
-				i++;
+		//	for (k = 0; data.stack[i].type != SEMI_COLON; k++, i++) {
+		//		puts(data.stack[i].x);
+		//		Node *arg  = pool(nodes);
+		//		arg->flags = NF_adopted;
+		//		arg->token = &data.stack[i];
+		//		i++;
 
-				Node *dec  = pool(nodes);
-				dec->flags = 0x0;
-				dec->token = &data.stack[i];
-				dec->children[0] = arg;
+		//		Node *dec  = pool(nodes);
+		//		dec->flags = 0x0;
+		//		dec->token = &data.stack[i];
+		//		dec->children[0] = arg;
 
-				parent->children[k] = dec;
+		//		parent->children[k] = dec;
 
-			}
+		//	}
 			lines[line_index++] = parent;
 			break;
 		}
