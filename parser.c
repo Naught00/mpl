@@ -74,10 +74,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			*l_size += 1;
 			break;
 		case PROC_DECLARATION:
-			proc_token =  data.sp;
-
-		//	shput(vtypes, tokens[i].x, tokens[i - 1].type);
-			push(data, tokens[i]);
+			proc_token = data.sp;
 			i += 2;
 			while (tokens[i].type != CLOSE_PARENTHESES) {
 				if (tokens[i].type == COMMA) {
@@ -101,24 +98,21 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			extra_tokens -= 3;
 			break;
 		case INT:
+			push(data, tokens[i + 1]);
+			data.stack[data.sp - 1].type = DECLARATION_CHILD;
+			push(data, tokens[i]);
+
 			if (tokens[i + 1].type == PROC_DECLARATION) {
 				break;
 			}
 
-			//shput(vtypes, tokens[i + 1].x, tokens[i].type);
-
-			push(data, tokens[i + 1]);
-			data.stack[data.sp - 1].type = DECLARATION_CHILD;
-			push(data, tokens[i]);
-			push(data, _SEMI_COLON);
-
 			switch (tokens[i + 2].type) {
 			case SEMI_COLON:
 				i += 2;
+				*l_size -= 1;
 				break;
 			default:
-				*l_size      += 1;
-				extra_tokens += 2;
+				extra_tokens += 1;
 				break;
 			}
 			break;
@@ -181,13 +175,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 
 	struct scope *curr_scope;
 	struct scope *prev_scope;
-	curr_scope = pool(scopes);
+	curr_scope  = pool(scopes);
 	curr_scope->vtypes     = NULL;
 	curr_scope->frame_size = 0;
-	//@Fix global scope
+
+	struct vtypes_hm *procedures;
 
 	uint64_t value; /* for types hashmap (see parser.h) */
-	uint32_t curr_offset = 0x0;
+	uint32_t curr_offset = 0x4;
 	uint32_t line_index;
 	int k;
 	for (i = 0, line_index = 0; i < tokenc; i++) {
@@ -209,35 +204,34 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			nodes.p_index++;
 			break;
 		}
-		case INTEGER: case IDENTIFIER_R: case DECLARATION_CHILD: {
+		case INTEGER: case DECLARATION_CHILD: {
 			Node *child  = pool(nodes);
 			child->token = &data.stack[i];
 			child->flags = 0x0;
 			break;
 		}
-		case IDENTIFIER_L: {
+		/* lvalues */
+		case IDENTIFIER_L: case IDENTIFIER_R: {
 			Node *child  = pool(nodes);
 			child->token = &data.stack[i];
 			child->flags = 0x0;
 
 			value = shget(curr_scope->vtypes, data.stack[i].x);
 			child->dtype = value >> 32;
+			printf("value32::%d\n", child->dtype);
 			child->auxiliary = pool(offsets);
 
 			/* base pointer offset */
 			*(uint32_t *) child->auxiliary = value;
-			puts(child->token->x);
 			break;
 		}
 		case PROC_DECLARATION: case PROC_DEFINITION: {
 			Node *parent  = pool(nodes);
 			parent->token = &data.stack[i];
 			parent->flags = 0x0;
-			//@Fix sort out types for function calls
-			//shput(*curr_vtypes, data.stack[i].x, );
-			//shget(vtypes, data.stack[i].x);
 
-			i++;
+			/* skip type and ( */
+			i += 2;
 			/* arguments */
 			for (k = 0; data.stack[i].type != SEMI_COLON; k++, i++) {
 				puts(data.stack[i].x);
@@ -258,21 +252,17 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			break;
 		}
 		case INT: {
-			Node *parent  = pool_stay(nodes); 
-			parent->token = &data.stack[i];
-			parent->flags = 0x0;
+			value = (uint64_t) INT << 32;
+			if (pool_top(nodes).token->type == DECLARATION_CHILD) {
+				value       |= curr_offset;
+				curr_offset += 0x4;
 
-			parent->children[0] = pool_offset(nodes, -1);
-			parent->children[0]->flags = NF_adopted;
+				shput(curr_scope->vtypes, pool_top(nodes).token->x, value);
+				curr_scope->frame_size += size_table[INT];
+				break;
+			}
 
-			value = 0;
-			value |= (uint64_t) INT << 32 | curr_offset;
-			curr_offset += 0x4;
-			shput(curr_scope->vtypes, parent->children[0]->token->x, value);
-
-			curr_scope->frame_size += size_table[INT];
-
-			nodes.p_index++;
+			shput(procedures, pool_top(nodes).token->x, value);
 			break;
 		}
 		case OPEN_BRACE: {

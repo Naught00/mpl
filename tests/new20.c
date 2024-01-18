@@ -1,6 +1,6 @@
 int i = 10;
 
-int main() {
+int main(int argc) {
 	int x;
 	x = 16;
 	{
