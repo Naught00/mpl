@@ -14,16 +14,6 @@
 #define LEFT  0
 #define RIGHT 1
 
-static struct {
-	char *key;
-       	int value;
-} *variables = NULL;
-
-static struct {
-	char *key;
-       	int value;
-} *procedures = NULL;
-
 static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
 
 char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
@@ -118,10 +108,10 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			*register_index -= 1;
 			break;
 		case IDENTIFIER_R:
-			variable_offset = shget(variables, root->token->x);
+			variable_offset = *(uint32_t *) root->auxiliary;
 
 			stbsp_sprintf(&assembly[*asm_size],
-				       	"\tmovl 0x%x(%%rsp), %s\n",
+				       	"\tmovl -0x%x(%%rbp), %s\n",
 				       	variable_offset, 
 				        registersl[*register_index]
 				     );
@@ -130,8 +120,6 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case INT:
-			shput(variables, root->children[LEFT]->token->x, *current_stack_offset);
-			*current_stack_offset += 0x8;
 			break;
 		case OPEN_BRACE:
 			stbsp_sprintf(&assembly[*asm_size],
@@ -151,16 +139,18 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			break;
 		case PROC_DEFINITION:
 			stbsp_sprintf(&assembly[*asm_size],
-				       	"%s:\n",
+				       	"%s:\n"
+					"\tpushq %%rbp\n"
+					"\tmovq %%rsp, %%rbp\n",
 					root->token->x
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case ASSIGNMENT:
-			variable_offset = shget(variables, root->children[LEFT]->token->x);
+			variable_offset = *(uint32_t *) root->children[0]->auxiliary; 
 
 			stbsp_sprintf(&assembly[*asm_size],
-				       	"\tmovl %s, 0x%x(%%rsp)\n",
+				       	"\tmovl %s, -0x%x(%%rbp)\n",
 				       	registersl[--*register_index],
 				       	variable_offset
 				     );

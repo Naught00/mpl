@@ -93,6 +93,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 					i++;
 					continue;
 				}
+				tokens[i + 1].type = DECLARATION_CHILD;
 				push(data, tokens[i + 1]);
 				push(data, tokens[i]);
 				i += 2;
@@ -188,9 +189,9 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	struct vtypes_hm *procedures = NULL;
 
 	uint64_t value; /* for types hashmap (see parser.h) */
-	uint32_t curr_offset = 0x4;
+	uint32_t curr_offset = 0x0;
 	uint32_t line_index;
-	int k;
+	int k, prev;
 	for (i = 0, line_index = 0; i < tokenc; i++) {
 		switch (data.stack[i].type) {
 		case ASSIGNMENT:
@@ -210,12 +211,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			nodes.p_index++;
 			break;
 		}
-		case INTEGER: case DECLARATION_CHILD: {
+		case INTEGER: {
 			Node *child  = pool(nodes);
 			child->token = &data.stack[i];
 			child->flags = 0x0;
 			break;
 		}
+		case DECLARATION_CHILD:
+			break;
 		/* lvalues */
 		case IDENTIFIER_L: case IDENTIFIER_R: {
 			Node *child  = pool(nodes);
@@ -225,6 +228,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			value = shget(curr_scope->vtypes, data.stack[i].x);
 			child->dtype = value >> 32;
 			printf("value32::%d\n", child->dtype);
+			puts(child->token->x);
 			child->auxiliary = pool(offsets);
 
 			/* base pointer offset */
@@ -236,39 +240,22 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			parent->token = &data.stack[i];
 			parent->flags = 0x0;
 
-			/* skip type and ( */
-			//i += 2;
-			/* arguments */
-		//	for (k = 0; data.stack[i].type != SEMI_COLON; k++, i++) {
-		//		puts(data.stack[i].x);
-		//		Node *arg  = pool(nodes);
-		//		arg->flags = NF_adopted;
-		//		arg->token = &data.stack[i];
-		//		i++;
-
-		//		Node *dec  = pool(nodes);
-		//		dec->flags = 0x0;
-		//		dec->token = &data.stack[i];
-		//		dec->children[0] = arg;
-
-		//		parent->children[k] = dec;
-
-		//	}
 			lines[line_index++] = parent;
 			break;
 		}
 		case INT: {
+			prev = i - 1;
 			value = (uint64_t) INT << 32;
-			if (pool_top(nodes).token->type == DECLARATION_CHILD) {
-				value       |= curr_offset;
+			if (stack_index(data, prev).type == DECLARATION_CHILD) {
 				curr_offset += 0x4;
+				value       |= curr_offset;
 
-				shput(curr_scope->vtypes, pool_top(nodes).token->x, value);
+				shput(curr_scope->vtypes, stack_index(data, prev).x, value);
 				curr_scope->frame_size += size_table[INT];
 				break;
 			}
 
-			shput(procedures, pool_top(nodes).token->x, value);
+			shput(procedures, stack_index(data, prev).x, value);
 			break;
 		}
 		case OPEN_BRACE: {
