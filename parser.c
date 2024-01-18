@@ -108,6 +108,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			//shput(vtypes, tokens[i + 1].x, tokens[i].type);
 
 			push(data, tokens[i + 1]);
+			data.stack[data.sp - 1].type = DECLARATION_CHILD;
 			push(data, tokens[i]);
 			push(data, _SEMI_COLON);
 
@@ -168,6 +169,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	scopes.pool = malloc(tokenc * sizeof(struct scope));
 	scopes.p_index = 0;
 
+	struct rbp_offset_pool {
+		uint32_t *pool;
+		uint32_t p_index;
+	} offsets;
+	//@Fix lower memory footprint: get size from lexer
+	offsets.pool = malloc(tokenc * sizeof(uint32_t));
+	offsets.p_index = 0;
+
 	Node **lines = malloc(*l_size * sizeof(Node *));
 
 	struct scope *curr_scope;
@@ -177,6 +186,8 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	curr_scope->frame_size = 0;
 	//@Fix global scope
 
+	uint64_t value; /* for types hashmap (see parser.h) */
+	uint32_t curr_offset = 0x0;
 	uint32_t line_index;
 	int k;
 	for (i = 0, line_index = 0; i < tokenc; i++) {
@@ -198,7 +209,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			nodes.p_index++;
 			break;
 		}
-		case INTEGER: case IDENTIFIER_R: {
+		case INTEGER: case IDENTIFIER_R: case DECLARATION_CHILD: {
 			Node *child  = pool(nodes);
 			child->token = &data.stack[i];
 			child->flags = 0x0;
@@ -208,7 +219,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			Node *child  = pool(nodes);
 			child->token = &data.stack[i];
 			child->flags = 0x0;
-			child->dtype = shget(curr_scope->vtypes, data.stack[i].x);
+
+			value = shget(curr_scope->vtypes, data.stack[i].x);
+			child->dtype = value >> 32;
+			child->auxiliary = pool(offsets);
+
+			/* base pointer offset */
+			*(uint32_t *) child->auxiliary = value;
+			puts(child->token->x);
 			break;
 		}
 		case PROC_DECLARATION: case PROC_DEFINITION: {
@@ -247,7 +265,11 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			parent->children[0] = pool_offset(nodes, -1);
 			parent->children[0]->flags = NF_adopted;
 
-			shput(curr_scope->vtypes, parent->children[0]->token->x, INT);
+			value = 0;
+			value |= (uint64_t) INT << 32 | curr_offset;
+			curr_offset += 0x4;
+			shput(curr_scope->vtypes, parent->children[0]->token->x, value);
+
 			curr_scope->frame_size += size_table[INT];
 
 			nodes.p_index++;

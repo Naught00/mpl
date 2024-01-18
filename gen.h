@@ -5,7 +5,8 @@
 #define push(s, v) s.stack[s.sp++] = v
 #define pop(s, v)  s.stack[s.sp--]
 #define popl(s, v) s.sp--
-#define stacktop(s) s.stack[sp - 1]
+#define stacktop(s) s.stack[s.sp - 1]
+#define modtop(s, v) s.stack[s.sp - 1] = v
 
 /* Mem pools */
 #define pool(p)           &p.pool[p.p_index++]
