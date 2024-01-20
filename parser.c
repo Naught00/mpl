@@ -75,7 +75,6 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			if (tokens[j + 1].type == OPEN_BRACE) {
 				data.stack[data.sp - 2].type = PROC_DEFINITION;
 				push(data, tokens[j + 1]);
-				*l_size += 1;
 			}
 
 			i += 2;
@@ -173,7 +172,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	variables.pool    = malloc(data.sp * sizeof(uint32_t));
 	variables.p_index = 0;
 
-	Node **lines = malloc(*l_size * sizeof(Node *) * 10);
+	Node **lines = malloc(*l_size * sizeof(Node *) * 3);
 
 	struct scope *curr_scope;
 	struct scope *prev_scope;
@@ -280,7 +279,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 
 			parent->auxiliary = (void *) &curr_scope->frame_size;
 
-			for (j = 0; j < shlen(prev_scope); j++) {
+			for (j = 0; j < shlen(prev_scope->vtypes); j++) {
 				shput(curr_scope->vtypes,
 				          prev_scope->vtypes[j].key,
 				          prev_scope->vtypes[j].value);
