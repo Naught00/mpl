@@ -1,8 +1,8 @@
 all:
-	cc -g mpl.c parser.c out.c -o mpl
+	cc -fsanitize=address -g mpl.c parser.c out.c -o mpl
 run:
 	cc -DDEBUG=1 mpl.c parser.c out.c -o mpl 
-	./mpl tests/new20.c
+	./mpl tests/new21.c
 debug:
 	cc -DDEBUG=1 -g mpl.c parser.c out.c -o mpl
 release:

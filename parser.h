@@ -20,31 +20,24 @@ struct Node {
 	void *auxiliary;
 };
 
-/* 
-   Value is a 64 bit integer containing a signed 32 bit 
-   integer for the data Type enum (see lexer.h) and unsigned 
-   32bit integer for the base pointer offset: -$0xX(%rbp)
+struct variable {
+	size_t   size;
+	uint32_t offset;
+};
 
-                       1                   2                   3
-   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                       enum Type type                        |  
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                       uint32_t offset                       | 
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+struct vtypes_value {
+	enum Type data_type;
+	struct variable variable;
+};
 
- */
- 
 struct vtypes_hm {
 	char *key;
-	uint64_t value;
+	struct vtypes_value value;
 };
+
 
 extern size_t size_table[];
 
-// @Fix Doesn't need to be in scope struct
-// we should dump hash maps before entering 
-// code gen
 struct scope {
 	struct vtypes_hm *vtypes;
 	size_t frame_size;

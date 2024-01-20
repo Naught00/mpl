@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "parser.h"
@@ -16,9 +15,26 @@
 
 static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
 
-char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
-char *registersl[] = {"%eax", "%ebx", "%ecx", "%edx", "%edi"};
+#define take(r)    r->registers[r->r_index++]
+#define release(r) r->r_index--
 
+static char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
+static char *registersl[] = {"%eax", "%ebx", "%ecx", "%edx", "%edi"};
+
+struct reg_stacks {
+	int r_index;
+	char *registers[];
+};
+
+static struct reg_stacks arg_regsq = 
+{0, {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"}};
+
+static struct reg_stacks arg_regsl = 
+{0, {"%edi", "%esi", "%edx", "%ecx", "%e8", "%e9"}};
+
+static struct reg_stacks *curr_argstack;
+
+//~Fix think about updating tokenc.
 char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	int asm_size;
 	asm_size = 0;
@@ -27,8 +43,7 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 
 	char *start = ".section .text\n"
 	       	      ".global _start\n"
-		      "_start:\n"
-		      "\tsub $0x40, %rsp\n";
+		      "_start:\n";
 
 	int start_length = strlen(start);
 	memmove(assembly, start, start_length);
@@ -43,7 +58,6 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	int current_stack_offset = 0x0;
 	int register_index       = 0;
 	uint32_t sp;
-	printf("lsize: %d\n", l_size);
 	for (i = 0; i < l_size; i++) {
 		sp = 0;
 		stack[sp++] = tree[i];
@@ -108,7 +122,7 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			*register_index -= 1;
 			break;
 		case IDENTIFIER_R:
-			variable_offset = *(uint32_t *) root->auxiliary;
+			variable_offset = ((struct variable *) root->auxiliary)->offset;
 
 			stbsp_sprintf(&assembly[*asm_size],
 				       	"\tmovl -0x%x(%%rbp), %s\n",
@@ -134,6 +148,9 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 					*((size_t *) root->auxiliary)
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
+
+			arg_regsq.r_index = 0;
+			arg_regsl.r_index = 0;
 			break;
 		case PROC_DECLARATION:
 			break;
@@ -146,8 +163,24 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
+		case LOAD_ARG:
+			if (((struct variable *) root->auxiliary)->size % 8 == 0)
+				curr_argstack = &arg_regsq;
+			else 
+				curr_argstack = &arg_regsl;
+
+			stbsp_sprintf(&assembly[*asm_size],
+				       	"\tmov %s, -0x%x(%%rbp)\n",
+					take(curr_argstack),
+					((struct variable *) root->auxiliary)->offset
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
+			break;
 		case ASSIGNMENT:
-			variable_offset = *(uint32_t *) root->children[0]->auxiliary; 
+			variable_offset = ((struct variable *) root->
+							       children[0]->
+							       auxiliary)->
+				                               offset;
 
 			stbsp_sprintf(&assembly[*asm_size],
 				       	"\tmovl %s, -0x%x(%%rbp)\n",
@@ -156,6 +189,7 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 				     );
 
 			*asm_size += strlen(&assembly[*asm_size]);
+			break;
 		}
 		return;
 	}

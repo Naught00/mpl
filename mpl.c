@@ -19,7 +19,6 @@ static void token_print(Token *tokens, int tokenc);
 
 static struct {char *key; enum Type value;} *types;
 
-
 void init_types() {
 	shput(types, "int", INT);
 }
@@ -43,7 +42,10 @@ int main(int argc, char **argv) {
 	char *program = malloc(program_length);
 	fread(program, 1, program_length, f);
 	fclose(f);
+
+	#ifdef DEBUG
 	puts(program);
+	#endif
 
 	init_types();
 
@@ -185,7 +187,6 @@ int main(int argc, char **argv) {
 		} 
 		case '}': {
 			repr = &reprs[r_index];
-			puts("closing...");
 			repr[0] = ch;
 			repr[1] = '\0';
 			r_index += 2;
@@ -248,7 +249,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("%d\n", tokenc);
 	free(program);
 //	token_print(tokens, tokenc);
 
@@ -268,15 +268,15 @@ int main(int argc, char **argv) {
 		return 3;
 	}
 
-	fprintf(as, "%s", assembly);
-	fclose(as);
+	//fprintf(as, "%s", assembly);
+	//fclose(as);
 
-	system("as -o /tmp/tmp.o /tmp/a.s");
-	system("ld /tmp/tmp.o -o a.out");
-	remove("/tmp/a.s");
-	remove("/tmp/tmp.o");
+	//system("as -o /tmp/tmp.o /tmp/a.s");
+	//system("ld /tmp/tmp.o -o a.out");
+	//remove("/tmp/a.s");
+	//remove("/tmp/tmp.o");
 
-	free(assembly);
+	//free(assembly);
 	//token_delete(tokens, tokenc);
 	//@TODO free the tree
 }
