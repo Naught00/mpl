@@ -105,8 +105,8 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 {
 	int variable_offset;
 	struct procedure_call *proc_call;
-	char *reg, *argreg;
-	int i;
+	char *reg, *argreg, *retreg;
+	int i, j;
 
 	if (!root->children || root->flags & NF_children_added) {
 		switch (root->token->type) {
@@ -133,8 +133,6 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			*register_index -= 1;
 			break;
 		case IDENTIFIER_R:
-			printf("IR::%d\n", root->token->type);
-			printf("IR::%s\n", root->token->x);
 			variable_offset = ((struct variable *) root->auxiliary)->offset;
 
 			stbsp_sprintf(&assembly[*asm_size],
@@ -161,9 +159,6 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 					*((size_t *) root->auxiliary)
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
-
-			arg_regsq.r_index = 0;
-			arg_regsl.r_index = 0;
 			break;
 		case PROC_DECLARATION:
 			break;
@@ -194,14 +189,13 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			break;
 		case PROC_CALL:
 			proc_call = root->auxiliary;
-			printf("argc;;;::%d\n", proc_call->argc);
-			for (i = 0; i < proc_call->argc; i++) {
+			for (i = 0, j = *register_index - proc_call->argc; i < proc_call->argc; i++, j++) {
 				if (proc_call->argsizes[i] % 8 == 0) {
 					argreg = take((&arg_regsq));
-					reg    = registersq[i];
+					reg    = registersq[j];
 				} else {
 					argreg = arg_regsl.registers[i];
-					reg    = registersl[i];
+					reg    = registersl[j];
 				}
 
 				stbsp_sprintf(&assembly[*asm_size],
@@ -214,6 +208,22 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 					"\tcall %s\n", root->token->x
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
+			*register_index -= proc_call->argc;
+
+			if (proc_call->return_size % 8 == 0)
+				retreg = registersq[0];
+			else
+				retreg = registersl[0];
+
+			if (*register_index == 0)
+				*register_index += 1;
+			stbsp_sprintf(&assembly[*asm_size],
+					"\tmov %s, %s\n", 
+					retreg, registersl[*register_index]
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
+			*register_index += 1;
+			printf("regi%d\n", *register_index);
 			break;
 		case ASSIGNMENT:
 			variable_offset = ((struct variable *) root->
@@ -226,6 +236,7 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 				       	registersl[--*register_index],
 				       	variable_offset
 				     );
+
 
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;

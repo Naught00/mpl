@@ -57,10 +57,12 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			
 			topop = op.stack[op.sp - 1];
 			if (precedence(next) < precedence(topop)) {
+				puts(next.x);
+				puts(topop.x);
 				push(data, topop);
 				--op.sp;
-			} else if (associates_left[topop.type]
-				   && precedence(next) == precedence(topop)) {
+			}  else if (associates_left[topop.type]
+				 && precedence(next) == precedence(topop)) {
 				push(data, topop);
 				--op.sp;
 			}
@@ -110,6 +112,9 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 				i += 2;
 				break;
 			case ASSIGNMENT:
+				tokens[i + 1].type = IDENTIFIER_L;
+				push(data, tokens[i + 1]);
+				i++;
 				break;
 			default:
 				break;
@@ -141,7 +146,6 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 		if (data.stack[i].x == NULL) {
 			break;
 		}
-		printf("%s", data.stack[i].x);
 	}
 	printf("i:%d\n", i);
 	#endif

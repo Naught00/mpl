@@ -13,5 +13,5 @@ int main(int argc) {
 	z = 120;
 
 	z = (3 * 4) + 2;
-	foo_new(2, 3);
+	x = foo_new(2, 3) + foo_new(4, 5);
 }

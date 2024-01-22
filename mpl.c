@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
 	uint32_t l_index = 0;
 	enum Type data_type;
-	int i;
+	int i, openc = 1, closec = 1;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -142,6 +142,8 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case '(': {
+			openc++;
+			if (openc == 1)  break;
 			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -156,6 +158,9 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case ')': {
+			openc--;
+			if (openc == 0)  break;
+
 			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -237,6 +242,8 @@ int main(int argc, char **argv) {
 			} else if (program[i + 1] == '(') {
 				token.type = PROC_CALL;
 				lvalue  = false;
+				openc = 0;
+				closec = 0;
 			} else if (lvalue && declaration) {
 				token.type  = DECLARATION_CHILD; 
 				lvalue      = false;
@@ -256,11 +263,8 @@ int main(int argc, char **argv) {
 	}
 
 	free(program);
-//	token_print(tokens, tokenc);
 
-	//Node *tree = tree_make(tokens, tokenc, lines, l_index);
 	Node **tree  = shunting(tokens, tokenc, &l_index);
-	//tree_print(tree);
 	
 	char *assembly;
 	assembly = compile(tree, l_index, tokenc);
@@ -304,6 +308,7 @@ static void token_print(Token *tokens, int tokenc) {
 		//case OPERATOR: printf("OPERATOR: %s\n", tokens[i].x); break;
 		case IDENTIFIER_L: printf("IDENTIFIER_L: %s\n", tokens[i].x); break;
 		case IDENTIFIER_R: printf("IDENTIFIER_R: %s\n", tokens[i].x); break;
+		case DECLARATION_CHILD: printf("decler: %s\n", tokens[i].x); break;
 		case OPEN_PARENTHESES: printf("Open PARENTHESES: %s\n", tokens[i].x); break;
 		case CLOSE_PARENTHESES: printf("Close PARENTHESES: %s\n", tokens[i].x); break;
 		case SEMI_COLON: printf("Semi-colon: %s\n", tokens[i].x); break;
