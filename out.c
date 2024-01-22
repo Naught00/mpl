@@ -18,6 +18,8 @@ static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *
 #define take(r)    r->registers[r->r_index++]
 #define release(r) r->r_index--
 
+#define release_all(r) r.r_index = 0
+
 static char *registersq[] = {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"};
 static char *registersl[] = {"%eax", "%ebx", "%ecx", "%edx", "%edi"};
 
@@ -25,6 +27,12 @@ struct reg_stacks {
 	int r_index;
 	char *registers[];
 };
+
+//static struct reg_stacks registersq = 
+//{0, {"%rax", "%rbx", "%rcx", "%rdx", "%rdi"}};
+//
+//static struct reg_stacks registersq = 
+//{0, {"%eax", "%ebx", "%ecx", "%edx", "%edi"}};
 
 static struct reg_stacks arg_regsq = 
 {0, {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"}};
@@ -96,6 +104,9 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 		          int *current_stack_offset, int *register_index) 
 {
 	int variable_offset;
+	struct procedure_call *proc_call;
+	char *reg, *argreg;
+	int i;
 
 	if (!root->children || root->flags & NF_children_added) {
 		switch (root->token->type) {
@@ -122,6 +133,8 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			*register_index -= 1;
 			break;
 		case IDENTIFIER_R:
+			printf("IR::%d\n", root->token->type);
+			printf("IR::%s\n", root->token->x);
 			variable_offset = ((struct variable *) root->auxiliary)->offset;
 
 			stbsp_sprintf(&assembly[*asm_size],
@@ -137,14 +150,14 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			break;
 		case OPEN_BRACE:
 			stbsp_sprintf(&assembly[*asm_size],
-				       	"\tsub $0x%x, %%rsp\n",
+				       	"\tsub $0x%lx, %%rsp\n",
 					*((size_t *) root->auxiliary)
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case CLOSE_BRACE:
 			stbsp_sprintf(&assembly[*asm_size],
-				       	"\tadd $0x%x, %%rsp\n",
+				       	"\tadd $0x%lx, %%rsp\n",
 					*((size_t *) root->auxiliary)
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
@@ -162,6 +175,9 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 					root->token->x
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
+			
+			release_all(arg_regsq);
+			release_all(arg_regsl);
 			break;
 		case LOAD_ARG:
 			if (((struct variable *) root->auxiliary)->size % 8 == 0)
@@ -173,6 +189,29 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 				       	"\tmov %s, -0x%x(%%rbp)\n",
 					take(curr_argstack),
 					((struct variable *) root->auxiliary)->offset
+				     );
+			*asm_size += strlen(&assembly[*asm_size]);
+			break;
+		case PROC_CALL:
+			proc_call = root->auxiliary;
+			printf("argc;;;::%d\n", proc_call->argc);
+			for (i = 0; i < proc_call->argc; i++) {
+				if (proc_call->argsizes[i] % 8 == 0) {
+					argreg = take((&arg_regsq));
+					reg    = registersq[i];
+				} else {
+					argreg = arg_regsl.registers[i];
+					reg    = registersl[i];
+				}
+
+				stbsp_sprintf(&assembly[*asm_size],
+						"\tmov %s, %s\n",
+						reg, argreg
+					     );
+				*asm_size += strlen(&assembly[*asm_size]);
+			}
+			stbsp_sprintf(&assembly[*asm_size],
+					"\tcall %s\n", root->token->x
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
@@ -197,7 +236,6 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 	stack[(*sp)++] = root;
 	root->flags   |= NF_children_added;
 	
-	int i;
 	for (i = 1; i > -1; i--) {
 		if (root->children[i]) {
 			stack[(*sp)++] = root->children[i];

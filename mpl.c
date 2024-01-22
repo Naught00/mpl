@@ -51,17 +51,18 @@ int main(int argc, char **argv) {
 
 	Token *tokens = malloc(program_length * sizeof(Token));
 
-	int i;
 	char *reprs     = malloc(program_length * sizeof(char) * 10);
 	memset(reprs, 0, program_length * sizeof(char) * 10);
 	uint32_t r_index = 0;
 
 	int tokenc, r;
 	char ch, *repr, *identifier;
-	bool lvalue      = true;
-	bool declaration = false;
+
+	bool lvalue = true, declaration = false;
+
 	uint32_t l_index = 0;
 	enum Type data_type;
+	int i;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -78,7 +79,6 @@ int main(int argc, char **argv) {
 			i--;
 
 			repr[r] = '\0';
-			//printf("repr: %s\n", repr);
 			r_index += r + 1;
 
 			Token token = {INTEGER, repr};
@@ -142,7 +142,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case '(': {
-			//printf("%c\n", ch);
 			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -157,7 +156,6 @@ int main(int argc, char **argv) {
 			break;
 		}
 		case ')': {
-			//printf("%c\n", ch);
 			repr = &reprs[r_index];
 			repr[0] = ch;
 			repr[1] = '\0';
@@ -216,8 +214,10 @@ int main(int argc, char **argv) {
 
 			identifier = &reprs[r_index];
 			r = 0;
-
-			while isalpha(program[i]) {
+			while (isalpha(program[i])
+			       || program[i] == '_'
+			       || isdigit(program[i])
+			       ) {
 				identifier[r++] = program[i];
 				i++;
 			}
@@ -230,16 +230,22 @@ int main(int argc, char **argv) {
 			if (data_type) {
 				token.type  = data_type;
 				declaration = true;
+				lvalue      = true;
 			} else if (program[i + 1] == '(' && declaration) {
 				token.type = PROC_DECLARATION;
 				declaration = false;
 			} else if (program[i + 1] == '(') {
 				token.type = PROC_CALL;
+				lvalue  = false;
+			} else if (lvalue && declaration) {
+				token.type  = DECLARATION_CHILD; 
+				lvalue      = false;
+				declaration = false;
 			} else if (lvalue) {
-				token.type = IDENTIFIER_L; 
-				lvalue = false;
+				token.type  = IDENTIFIER_L; 
+				lvalue      = false;
 			} else {
-				token.type = IDENTIFIER_R;
+				token.type  = IDENTIFIER_R;
 			}
 
 			tokens[tokenc] = token;

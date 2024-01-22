@@ -25,6 +25,19 @@ struct variable {
 	uint32_t offset;
 };
 
+struct procedure_call {
+	size_t return_size;
+	size_t *argsizes;
+	uint32_t argc;
+};
+
+#define add_arg(p, v) p->args[p->argc++] = v
+struct proc_hmv {
+	enum Type return_type;
+	uint32_t argc;
+	enum Type *args;
+};
+
 struct vtypes_value {
 	enum Type data_type;
 	struct variable variable;
@@ -34,7 +47,6 @@ struct vtypes_hm {
 	char *key;
 	struct vtypes_value value;
 };
-
 
 extern size_t size_table[];
 

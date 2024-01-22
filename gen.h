@@ -5,7 +5,7 @@
 #define push(s, v) s.stack[s.sp++] = v
 #define pop(s, v)  s.stack[s.sp--]
 #define popl(s, v) s.sp--
-#define stacktop(s) s.stack[s.sp - 1]
+#define top(s) s.stack[s.sp - 1]
 #define stack_index(s, i) s.stack[i]
 #define modtop(s, v) s.stack[s.sp - 1] = v
 

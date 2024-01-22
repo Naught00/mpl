@@ -5,6 +5,7 @@
 //C23
 enum Type {
 	/* Precedence */
+	PROC_CALL,
 	ASSIGNMENT,
 	CLOSE_PARENTHESES,
 	MINUS,
@@ -12,7 +13,6 @@ enum Type {
 	DIVIDE,
 	MULTIPLY,
 	OPEN_PARENTHESES,
-	PROC_CALL,
 
 	PROC_DECLARATION,
 	PROC_DEFINITION,
@@ -28,6 +28,13 @@ enum Type {
 
 	/* Data types */
 	INT,
+};
+
+enum Flags {
+	LF_lvalue = 0x1,
+	LF_declaration = 0x2,
+	LF_in_proc = 0x4,
+	LF_hanging = 0x8,
 };
 
 struct Token {

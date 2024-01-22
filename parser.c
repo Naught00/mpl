@@ -12,7 +12,8 @@
  *  10 is quite low */
 #define MAX_FRAME_DEPTH 10
 
-size_t size_table[] = {[INT] 4};
+size_t size_table[]      = {[INT] 4};
+bool   associates_left[] = {[PROC_CALL] true};
 
 static const struct Token _LOAD_ARG = {LOAD_ARG, ","};
 
@@ -47,6 +48,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 		case CLOSE_PARENTHESES: case OPEN_PARENTHESES:
 		case ADD:      case MINUS:
 		case MULTIPLY: case DIVIDE:
+		case PROC_CALL:
 			next  = tokens[i];
 			if (op.sp == 0) {
 				push(op, next);
@@ -57,7 +59,12 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			if (precedence(next) < precedence(topop)) {
 				push(data, topop);
 				--op.sp;
+			} else if (associates_left[topop.type]
+				   && precedence(next) == precedence(topop)) {
+				push(data, topop);
+				--op.sp;
 			}
+
 			push(op, next);
 			break;
 		case INTEGER: case IDENTIFIER_L: case IDENTIFIER_R:
@@ -83,7 +90,6 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 					i++;
 					continue;
 				}
-				tokens[i + 1].type = DECLARATION_CHILD;
 				push(data, tokens[i + 1]);
 				push(data, tokens[i]);
 				push(data, _LOAD_ARG);
@@ -98,8 +104,6 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			if (tokens[i + 1].type == PROC_DECLARATION) {
 				break;
 			}
-
-			data.stack[data.sp - 2].type = DECLARATION_CHILD;
 
 			switch (tokens[i + 2].type) {
 			case SEMI_COLON:
@@ -172,6 +176,29 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	variables.pool    = malloc(data.sp * sizeof(uint32_t));
 	variables.p_index = 0;
 
+	struct arg_pool {
+		enum Type *pool;
+		uint32_t p_index;
+	} argsp;
+	argsp.pool    = malloc(data.sp * sizeof(uint32_t));
+	argsp.p_index = 0;
+
+	struct argsizes_pool {
+		size_t   *pool;
+		uint32_t p_index;
+	} argsizes;
+	argsizes.pool    = malloc(data.sp * sizeof(uint32_t));
+	argsizes.p_index = 0;
+
+	struct proccall_pool {
+		struct procedure_call *pool;
+		uint32_t p_index;
+	} proc_calls;
+	proc_calls.pool    = malloc(data.sp * sizeof(uint32_t));
+	proc_calls.p_index = 0;
+	struct procedure_call *proc_call;
+
+	//@Fix determine the proper l_size 
 	Node **lines = malloc(*l_size * sizeof(Node *) * 3);
 
 	struct scope *curr_scope;
@@ -181,11 +208,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	curr_scope->frame_size = 0;
 
 	struct {
-		char *key; 
-		enum Type value;
+		char *key;
+		struct proc_hmv value;
 	} *procedures = NULL;
 
-	struct vtypes_value value; /* for types hashmap (see parser.h) */
+	struct proc_hmv proc_value;
+	struct proc_hmv *curr_procvalue;
+
+	struct vtypes_value value;
 	uint32_t curr_offset = 0x0;
 	uint32_t line_index;
 	int k, prev;
@@ -230,11 +260,39 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			break;
 		}
 		case PROC_DECLARATION: case PROC_DEFINITION: {
+			curr_offset = 0x0;
 			Node *parent  = pool(nodes);
 			parent->token = &data.stack[i];
 			parent->flags = 0x0;
 
 			lines[line_index++] = parent;
+			break;
+		}
+		case PROC_CALL: {
+			Node *parent  = pool(nodes);
+			parent->token = &data.stack[i];
+			parent->flags = 0x0;
+
+			proc_value    = shget(procedures, parent->token->x);
+			parent->dtype = proc_value.return_type;
+
+			for (j = proc_value.argc - 1, k = nodes.p_index - 2; j >= 0; k--)  {
+				if (!(nodes.pool[k].flags & NF_adopted)) {
+					parent->children[j]  = &nodes.pool[k];
+					nodes.pool[k].flags |= NF_adopted;
+					j--;
+				}
+			}
+
+
+			proc_call = pool(proc_calls);
+			proc_call->return_size = size_table[proc_value.return_type]; 
+			proc_call->argc        = proc_value.argc;
+			proc_call->argsizes    = pool(argsizes);
+			for (j = 0; j < proc_value.argc; j++)
+				proc_call->argsizes[j] = size_table[proc_value.args[j]];
+
+			parent->auxiliary = (void *) proc_call;
 			break;
 		}
 		case LOAD_ARG: {
@@ -246,6 +304,8 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 
 			parent->auxiliary = pool(variables);
 			*(struct variable *) parent->auxiliary = value.variable; 
+
+			add_arg(curr_procvalue, value.data_type);
 
 			lines[line_index++] = parent;
 			break;
@@ -264,7 +324,13 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 				break;
 			}
 
-			shput(procedures, stack_index(data, prev).x, INT);
+			proc_value = (struct proc_hmv) {INT, 0, pool(argsp)};
+			shput(procedures, stack_index(data, prev).x,
+					   proc_value);
+
+			curr_procvalue = &shget(procedures,
+				       	   stack_index(data, prev).x
+					   );
 			break;
 		}
 		case OPEN_BRACE: {
