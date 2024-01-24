@@ -11,13 +11,16 @@ enum Node_Flags {
 
 struct Node {
 	Token *token;
-	enum Type dtype;
 
 	//@FIXME non-bin ops
-	struct Node *children[2];
+	struct Node **children;
 
-	uint8_t flags;
 	void *auxiliary;
+
+	enum Type dtype;
+
+	uint8_t childc;
+	uint8_t flags;
 };
 
 struct variable {
@@ -39,8 +42,8 @@ struct proc_hmv {
 };
 
 struct vtypes_value {
-	enum Type data_type;
 	struct variable variable;
+	enum Type data_type;
 };
 
 struct vtypes_hm {

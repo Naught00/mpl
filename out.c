@@ -223,7 +223,6 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			*register_index += 1;
-			printf("regi%d\n", *register_index);
 			break;
 		case ASSIGNMENT:
 			variable_offset = ((struct variable *) root->

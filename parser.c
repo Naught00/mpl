@@ -57,8 +57,6 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			
 			topop = op.stack[op.sp - 1];
 			if (precedence(next) < precedence(topop)) {
-				puts(next.x);
-				puts(topop.x);
 				push(data, topop);
 				--op.sp;
 			}  else if (associates_left[topop.type]
@@ -158,6 +156,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	memset(nodes.pool, 0, data.sp * sizeof(Node));
 	nodes.p_index = 0;
 
+	struct childpool {
+		Node **pool;
+		uint32_t p_index;
+	} children;
+	children.pool = malloc(data.sp * sizeof(Node *));
+	memset(children.pool, 0, data.sp * sizeof(Node *));
+	children.p_index = 0;
+
 	struct spool {
 		struct scope *pool;
 		uint32_t p_index;
@@ -228,18 +234,20 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 		case ASSIGNMENT:
 		case ADD:      case MINUS:
 		case MULTIPLY: case DIVIDE: {
-			Node *parent  = pool_stay(nodes);
+			Node *parent  = pool(nodes);
 			parent->flags = 0x0;
 			parent->token = &data.stack[i];
+			parent->children = pool(children);
+			parent->childc   = 2;
+			children.p_index += 2;
 
-			for (j = 1, k = nodes.p_index - 1; j >= 0; k--)  {
+			for (j = 1, k = nodes.p_index - 2; j >= 0; k--)  {
 				if (!(nodes.pool[k].flags & NF_adopted)) {
 					parent->children[j] = &nodes.pool[k];
 					nodes.pool[k].flags |= NF_adopted;
 					j--;
 				}
 			}
-			nodes.p_index++;
 			break;
 		}
 		case INTEGER: {
@@ -273,12 +281,14 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			break;
 		}
 		case PROC_CALL: {
-			Node *parent  = pool(nodes);
-			parent->token = &data.stack[i];
-			parent->flags = 0x0;
+			Node *parent     = pool(nodes);
+			parent->token    = &data.stack[i];
+			parent->flags    = 0x0;
+			parent->children = pool(children);
 
-			proc_value    = shget(procedures, parent->token->x);
-			parent->dtype = proc_value.return_type;
+			proc_value     = shget(procedures, parent->token->x);
+			parent->dtype  = proc_value.return_type;
+			parent->childc = proc_value.argc;
 
 			for (j = proc_value.argc - 1, k = nodes.p_index - 2; j >= 0; k--)  {
 				if (!(nodes.pool[k].flags & NF_adopted)) {
@@ -287,7 +297,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 					j--;
 				}
 			}
-
+			children.p_index += proc_value.argc;
 
 			proc_call = pool(proc_calls);
 			proc_call->return_size = size_table[proc_value.return_type]; 

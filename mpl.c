@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
 	uint32_t l_index = 0;
 	enum Type data_type;
-	int i, openc = 1, closec = 1;
+	int i, openc = 1;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
 
@@ -243,7 +243,6 @@ int main(int argc, char **argv) {
 				token.type = PROC_CALL;
 				lvalue  = false;
 				openc = 0;
-				closec = 0;
 			} else if (lvalue && declaration) {
 				token.type  = DECLARATION_CHILD; 
 				lvalue      = false;
