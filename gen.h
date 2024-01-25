@@ -14,7 +14,7 @@
 #define pool_stay(p)      &p.pool[p.p_index]
 #define pool_index(p, i)  &p.pool[i]
 #define pool_offset(p, o) &p.pool[p.p_index + o]
-#define pool_top(p)       p.pool[p.p_index - 1]
+#define pool_top(p)       &p.pool[p.p_index - 1]
 #define pool_inc(p)       p.p_index++
 #define pool_freetop(p)   p.p_index--
 

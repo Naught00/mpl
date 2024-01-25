@@ -13,7 +13,7 @@
 #define LEFT  0
 #define RIGHT 1
 
-static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, int *current_stack_offset, int *register_index);
+static void cvisit(Node *root, Node **stack, uint32_t *sp, char *assembly, int *asm_size, bool *returning, int *register_index);
 
 #define take(r)    r->registers[r->r_index++]
 #define release(r) r->r_index--
@@ -50,8 +50,7 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	memset(assembly, 0, tokenc * 100);
 
 	char *start = ".section .text\n"
-	       	      ".global _start\n"
-		      "_start:\n";
+	       	      ".globl main\n";
 
 	int start_length = strlen(start);
 	memmove(assembly, start, start_length);
@@ -63,16 +62,17 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 		stack[i] = NULL;
 	}
 
-	int current_stack_offset = 0x0;
-	int register_index       = 0;
+	int register_index  = 0;
+	bool returning      = false;
 	uint32_t sp;
 	for (i = 0; i < l_size; i++) {
 		sp = 0;
 		stack[sp++] = tree[i];
+		register_index = 0;
 		while (sp) {
 			cvisit(stack[--sp], stack, &sp,
 				       	assembly, &asm_size,
-				       	&current_stack_offset,
+				       	&returning,
 				       	&register_index
 			      );
 			stack[sp] = NULL;
@@ -88,23 +88,25 @@ char *compile(Node **tree, uint32_t l_size, int tokenc) {
 	memmove(&assembly[asm_size], end, end_length);
 	asm_size += end_length;
 
-	char *exit = "exit:\n"
-		     "\tmovq %rdi, %rbx\n"
-		     "\tmovq $0x3c, %rax\n"
-		     "\tsyscall\n";
-	int exit_length = strlen(exit);
-	memmove(&assembly[asm_size], exit, exit_length);
-	asm_size += exit_length;
+	//char *exit = "exit:\n"
+	//	     "\tmovq %rdi, %rbx\n"
+	//	     "\tmovq $0x3c, %rax\n"
+	//	     "\tsyscall\n";
+	//int exit_length = strlen(exit);
+	//memmove(&assembly[asm_size], exit, exit_length);
+	//asm_size += exit_length;
 
 	return assembly;
 }
 
 static inline void cvisit(Node *root, Node **stack, uint32_t *sp, 
 		          char *assembly, int *asm_size, 
-		          int *current_stack_offset, int *register_index) 
+		          bool *returning, int *register_index) 
 {
 	int variable_offset;
 	struct procedure_call *proc_call;
+	size_t frame_size;
+	int temp_storage;
 	char *reg, *argreg, *retreg;
 	int i, j;
 
@@ -147,22 +149,38 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 		case INT:
 			break;
 		case OPEN_BRACE:
+			frame_size  = *(size_t *) root->auxiliary;
+			frame_size += 16 - frame_size % 16;
 			stbsp_sprintf(&assembly[*asm_size],
 				       	"\tsub $0x%lx, %%rsp\n",
-					*((size_t *) root->auxiliary)
+					frame_size
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
 			break;
 		case CLOSE_BRACE:
+			if (*returning) {
+				stbsp_sprintf(&assembly[*asm_size],
+						"\tleave\n"
+						"\tret\n"
+					     );
+				*asm_size += strlen(&assembly[*asm_size]);
+				break;
+			}
+
+			frame_size  = *(size_t *) root->auxiliary;
+			frame_size += 16 - frame_size % 16;
 			stbsp_sprintf(&assembly[*asm_size],
 				       	"\tadd $0x%lx, %%rsp\n",
-					*((size_t *) root->auxiliary)
+					frame_size
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
+
 			break;
 		case PROC_DECLARATION:
 			break;
 		case PROC_DEFINITION:
+			*returning = false;
+
 			stbsp_sprintf(&assembly[*asm_size],
 				       	"%s:\n"
 					"\tpushq %%rbp\n"
@@ -175,7 +193,7 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 			release_all(arg_regsl);
 			break;
 		case LOAD_ARG:
-			if (((struct variable *) root->auxiliary)->size % 8 == 0)
+			if (((struct variable *) root->auxiliary)->size == 8)
 				curr_argstack = &arg_regsq;
 			else 
 				curr_argstack = &arg_regsl;
@@ -190,8 +208,8 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 		case PROC_CALL:
 			proc_call = root->auxiliary;
 			for (i = 0, j = *register_index - proc_call->argc; i < proc_call->argc; i++, j++) {
-				if (proc_call->argsizes[i] % 8 == 0) {
-					argreg = take((&arg_regsq));
+				if (proc_call->argsizes[i] == 8) {
+					argreg = arg_regsq.registers[i];
 					reg    = registersq[j];
 				} else {
 					argreg = arg_regsl.registers[i];
@@ -204,27 +222,69 @@ static inline void cvisit(Node *root, Node **stack, uint32_t *sp,
 					     );
 				*asm_size += strlen(&assembly[*asm_size]);
 			}
+
+			*register_index -= proc_call->argc;
+			if (*register_index) {
+				temp_storage = 0;
+				stbsp_sprintf(&assembly[*asm_size],
+						"\tsub $0x30, %%rsp\n"
+					     );
+				*asm_size += strlen(&assembly[*asm_size]);
+
+				for (i = 0; i < *register_index; i++) {
+					stbsp_sprintf(&assembly[*asm_size],
+							"\tmov %s, 0x%x(%%rsp)\n",  
+							registersq[i], temp_storage
+						     );
+					*asm_size += strlen(&assembly[*asm_size]);
+
+					temp_storage += 0x8;
+				}
+
+			}
+
 			stbsp_sprintf(&assembly[*asm_size],
 					"\tcall %s\n", root->token->x
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
-			*register_index -= proc_call->argc;
 
-			if (proc_call->return_size % 8 == 0)
+			if (proc_call->return_size == 8)
 				retreg = registersq[0];
 			else
 				retreg = registersl[0];
 
-			if (*register_index == 0)
-				*register_index += 1;
 			stbsp_sprintf(&assembly[*asm_size],
 					"\tmov %s, %s\n", 
 					retreg, registersl[*register_index]
 				     );
 			*asm_size += strlen(&assembly[*asm_size]);
+
+			if (*register_index) {
+				temp_storage = 0;
+
+				for (i = 0; i < *register_index; i++) {
+					stbsp_sprintf(&assembly[*asm_size],
+							"\tmov 0x%x(%%rsp), %s\n",  
+							temp_storage, registersq[i]
+						     );
+					*asm_size += strlen(&assembly[*asm_size]);
+
+					temp_storage += 0x8;
+				}
+
+				stbsp_sprintf(&assembly[*asm_size],
+						"\tadd $0x30, %%rsp\n"
+					     );
+				*asm_size += strlen(&assembly[*asm_size]);
+			}
+
 			*register_index += 1;
 			break;
+		case RETURN:
+			*returning = true;
+			break;
 		case ASSIGNMENT:
+			puts(root->children[0]->token->x);
 			variable_offset = ((struct variable *) root->
 							       children[0]->
 							       auxiliary)->

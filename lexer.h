@@ -6,6 +6,7 @@
 enum Type {
 	/* Precedence */
 	ASSIGNMENT,
+	RETURN,
 	CLOSE_PARENTHESES,
 	ADD,
 	MINUS,
@@ -28,6 +29,8 @@ enum Type {
 
 	/* Data types */
 	INT,
+
+	/* Keywords */
 };
 
 enum Flags {

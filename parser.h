@@ -56,6 +56,7 @@ extern size_t size_table[];
 struct scope {
 	struct vtypes_hm *vtypes;
 	size_t frame_size;
+	uint32_t offset;
 };
 
 

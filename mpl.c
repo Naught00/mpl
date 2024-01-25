@@ -18,9 +18,14 @@ static void token_delete(Token *tokens, int tokenc);
 static void token_print(Token *tokens, int tokenc);
 
 static struct {char *key; enum Type value;} *types;
+static struct {char *key; enum Type value;} *keywords;
 
 void init_types() {
 	shput(types, "int", INT);
+}
+
+void init_keywords() {
+	shput(keywords, "return", RETURN);
 }
 
 int main(int argc, char **argv) {
@@ -48,6 +53,7 @@ int main(int argc, char **argv) {
 	#endif
 
 	init_types();
+	init_keywords();
 
 	Token *tokens = malloc(program_length * sizeof(Token));
 
@@ -61,7 +67,7 @@ int main(int argc, char **argv) {
 	bool lvalue = true, declaration = false;
 
 	uint32_t l_index = 0;
-	enum Type data_type;
+	enum Type data_type, keyword;
 	int i, openc = 1;
 	for (i = 0, tokenc = 0; i < program_length; i++) {
 		ch = program[i];
@@ -232,11 +238,20 @@ int main(int argc, char **argv) {
 
 			Token token = {.x = identifier};
 			data_type   = shget(types, identifier);
+			keyword     = shget(keywords, identifier);
 			if (data_type) {
 				token.type  = data_type;
 				declaration = true;
 				lvalue      = true;
-			} else if (program[i + 1] == '(' && declaration) {
+				goto done;
+			} 
+			if (keyword) {
+				token.type  = keyword;
+				lvalue      = false;
+				goto done;
+			}
+
+			if (program[i + 1] == '(' && declaration) {
 				token.type = PROC_DECLARATION;
 				declaration = false;
 			} else if (program[i + 1] == '(') {
@@ -254,6 +269,7 @@ int main(int argc, char **argv) {
 				token.type  = IDENTIFIER_R;
 			}
 
+			done:
 			tokens[tokenc] = token;
 			tokenc++;
 			break;
@@ -277,13 +293,13 @@ int main(int argc, char **argv) {
 		return 3;
 	}
 
-	//fprintf(as, "%s", assembly);
-	//fclose(as);
+	fprintf(as, "%s", assembly);
+	fclose(as);
 
-	//system("as -o /tmp/tmp.o /tmp/a.s");
-	//system("ld /tmp/tmp.o -o a.out");
-	//remove("/tmp/a.s");
-	//remove("/tmp/tmp.o");
+	system("as -o /tmp/tmp.o /tmp/a.s");
+	system("ld -emain --dynamic-linker=/usr/lib64/ld-linux-x86-64.so.2 /tmp/tmp.o -o a.out -lc");
+	remove("/tmp/a.s");
+	remove("/tmp/tmp.o");
 
 	//free(assembly);
 	//token_delete(tokens, tokenc);

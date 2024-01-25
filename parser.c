@@ -48,7 +48,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 		case CLOSE_PARENTHESES: case OPEN_PARENTHESES:
 		case ADD:      case MINUS:
 		case MULTIPLY: case DIVIDE:
-		case PROC_CALL:
+		case PROC_CALL: case RETURN:
 			next  = tokens[i];
 			if (op.sp == 0) {
 				push(op, next);
@@ -216,6 +216,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	curr_scope  = pool(scopes);
 	curr_scope->vtypes     = NULL;
 	curr_scope->frame_size = 0;
+	curr_scope->offset     = 0x0;
 
 	struct {
 		char *key;
@@ -226,22 +227,26 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 	struct proc_hmv *curr_procvalue;
 
 	struct vtypes_value value;
-	uint32_t curr_offset = 0x0;
 	uint32_t line_index;
-	int k, prev;
+	int k, prev, childc = 0;
 	for (i = 0, line_index = 0; i < data.sp; i++) {
 		switch (data.stack[i].type) {
+		case RETURN: childc = 1; goto operator;
+
 		case ASSIGNMENT:
 		case ADD:      case MINUS:
-		case MULTIPLY: case DIVIDE: {
+		case MULTIPLY: case DIVIDE:
+		childc = 2; 
+
+		operator: {
 			Node *parent  = pool(nodes);
 			parent->flags = 0x0;
 			parent->token = &data.stack[i];
 			parent->children = pool(children);
-			parent->childc   = 2;
-			children.p_index += 2;
+			parent->childc   = childc;
+			children.p_index += childc;
 
-			for (j = 1, k = nodes.p_index - 2; j >= 0; k--)  {
+			for (j = childc - 1, k = nodes.p_index - 2; j >= 0; k--)  {
 				if (!(nodes.pool[k].flags & NF_adopted)) {
 					parent->children[j] = &nodes.pool[k];
 					nodes.pool[k].flags |= NF_adopted;
@@ -272,7 +277,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			break;
 		}
 		case PROC_DECLARATION: case PROC_DEFINITION: {
-			curr_offset = 0x0;
+			curr_scope->offset = 0x0;
 			Node *parent  = pool(nodes);
 			parent->token = &data.stack[i];
 			parent->flags = 0x0;
@@ -330,8 +335,8 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			value.variable.size = size_table[INT]; 
 
 			if (stack_index(data, prev).type == DECLARATION_CHILD) {
-				curr_offset += value.variable.size;
-				value.variable.offset = curr_offset;
+				curr_scope->offset += value.variable.size;
+				value.variable.offset = curr_scope->offset;
 
 				shput(curr_scope->vtypes, stack_index(data, prev).x, value);
 				curr_scope->frame_size += value.variable.size;
@@ -356,6 +361,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			curr_scope = pool(scopes);
 			curr_scope->vtypes     = NULL;
 			curr_scope->frame_size = 0;
+			curr_scope->offset     = 0x0;
 
 			parent->auxiliary = (void *) &curr_scope->frame_size;
 
@@ -375,7 +381,7 @@ Node **shunting(Token *tokens, int tokenc, uint32_t *l_size) {
 			parent->auxiliary = (void *) &curr_scope->frame_size;
 
 			pool_freetop(scopes);
-			curr_scope = pool_offset(scopes, -1);
+			curr_scope = pool_top(scopes);
 			lines[line_index++] = parent;
 			break;
 		}
